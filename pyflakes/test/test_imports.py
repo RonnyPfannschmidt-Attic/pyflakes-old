@@ -504,6 +504,10 @@ class Test(harness.Test):
     def test_futureImport(self):
         '''__future__ is special'''
         self.flakes('from __future__ import division')
+        self.flakes('''
+        "docstring is allowed before future import"
+        from __future__ import division
+        ''')
 
     def test_futureImportFirst(self):
         """

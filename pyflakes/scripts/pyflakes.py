@@ -3,7 +3,7 @@
 Implementation of the command-line I{pyflakes} tool.
 """
 
-import compiler, sys
+import sys
 import os
 
 checker = __import__('pyflakes.checker').checker
@@ -60,7 +60,8 @@ def check(codeString, filename):
     else:
         # Okay, it's syntactically valid.  Now parse it into an ast and check
         # it.
-        tree = compiler.parse(codeString)
+        # 0x400 is the compile flag PyCF_ONLY_AST
+        tree = compile(codeString, filename, "exec", 0x400)
         w = checker.Checker(tree, filename)
         w.messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
         for warning in w.messages:
@@ -88,7 +89,7 @@ def main():
         for arg in args:
             if os.path.isdir(arg):
                 for dirpath, dirnames, filenames in os.walk(arg):
-                    for filename in filenames:
+                    for filename in sorted(filenames):
                         if filename.endswith('.py'):
                             warnings += checkPath(os.path.join(dirpath, filename))
             else:
