@@ -590,15 +590,6 @@ class TestSpecialAll(harness.Test):
             ''', filename=filename)
 
 
-
-class Python24Tests(harness.Test):
-    """
-    Tests for checking of syntax which is valid in Python 2.4 and newer.
-    """
-    if version_info < (2, 4):
-        skip = "Python 2.4 required for generator expression and decorator tests."
-
-
     def test_usedInGenExp(self):
         """
         Using a global in a generator expression results in no warnings.
