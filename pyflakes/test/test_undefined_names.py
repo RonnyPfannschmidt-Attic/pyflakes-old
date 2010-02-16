@@ -203,14 +203,12 @@ class Test(harness.Test):
         f()
         ''', m.UndefinedName)
 
-
-
-class Python24Test(harness.Test):
-    """
-    Tests for checking of syntax which is valid in Python 2.4 and newer.
-    """
-    if version_info < (2, 4):
-        skip = "Python 2.4 required for generator expression tests."
+    def test_definedAsStarArgs(self):
+        '''star and double-star arg names are defined'''
+        self.flakes('''
+        def f(a, *b, **c):
+            print a, b, c
+        ''')
 
     def test_definedInGenExp(self):
         """

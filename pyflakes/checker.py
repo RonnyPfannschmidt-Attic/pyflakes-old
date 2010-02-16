@@ -18,10 +18,7 @@ def iter_child_nodes(node, astcls=_ast.AST):
     and all items of fields that are lists of nodes.
     """
     for name in node._fields:
-        try:
-            field = getattr(node, name)
-        except AttributeError:
-            continue
+        field = getattr(node, name, None)
         if isinstance(field, astcls):
             yield field
         elif isinstance(field, list):
@@ -379,11 +376,12 @@ class Checker(object):
 
     GENERATOREXP = SETCOMP = LISTCOMP
 
-    def DICTCOMP(self, node):
-        for gen in node.generators:
-            self.handleNode(gen, node)
-        self.handleNode(node.key, node)
-        self.handleNode(node.value, node)
+    # dictionary comprehensions; introduced in Python 2.7
+    #def DICTCOMP(self, node):
+    #    for gen in node.generators:
+    #        self.handleNode(gen, node)
+    #    self.handleNode(node.key, node)
+    #    self.handleNode(node.value, node)
 
     def FOR(self, node):
         """

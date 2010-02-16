@@ -1,5 +1,6 @@
 
 import textwrap
+import _ast
 
 from twisted.trial import unittest
 
@@ -9,8 +10,8 @@ from pyflakes import checker
 class Test(unittest.TestCase):
 
     def flakes(self, input, *expectedOutputs, **kw):
-        # 0x400 is the compile flag PyCF_ONLY_AST
-        ast = compile(textwrap.dedent(input), "<test>", "exec", 0x400)
+        ast = compile(textwrap.dedent(input), "<test>", "exec",
+                      _ast.PyCF_ONLY_AST)
         w = checker.Checker(ast, **kw)
         outputs = [type(o) for o in w.messages]
         expectedOutputs = list(expectedOutputs)
