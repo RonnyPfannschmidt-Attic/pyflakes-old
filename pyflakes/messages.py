@@ -92,3 +92,17 @@ class UnusedVariable(Message):
     def __init__(self, filename, lineno, names):
         Message.__init__(self, filename, lineno)
         self.message_args = (names,)
+
+
+class StringFormattingProblem(Message):
+    message = 'string formatting arguments: should have %s, has %s'
+    def __init__(self, filename, lineno, nshould, nhave):
+        Message.__init__(self, filename, lineno)
+        self.message_args = (nshould, nhave)
+
+
+class StringFormatProblem(Message):
+    message = 'string.format(): %s'
+    def __init__(self, filename, lineno, msg):
+        Message.__init__(self, filename, lineno)
+        self.message_args = (msg,)

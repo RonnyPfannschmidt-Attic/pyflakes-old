@@ -5,9 +5,12 @@
 import __builtin__
 import os.path
 import _ast
+import re
 
 from pyflakes import messages
 
+interpol = re.compile(r'%(\([a-zA-Z0-9_]+\))?[-#0 +]*([0-9]+|[*])?'
+                      r'(\.([0-9]+|[*]))?[hlL]?[diouxXeEfFgGcrs%]')
 
 # utility function to iterate over an AST node's children, adapted
 # from Python 2.6's standard ast module
@@ -314,8 +317,8 @@ class Checker(object):
     TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
     CONTINUE = BREAK = PASS = ignore
     # "expr" type nodes
-    BOOLOP = BINOP = UNARYOP = LAMBDA = IFEXP = DICT = SET = YIELD = COMPARE = \
-    CALL = REPR = ATTRIBUTE = SUBSCRIPT = LIST = TUPLE = handleChildren
+    BOOLOP = UNARYOP = LAMBDA = IFEXP = DICT = SET = YIELD = COMPARE = \
+    CALL = REPR = SUBSCRIPT = LIST = TUPLE = handleChildren
     NUM = STR = ELLIPSIS = ignore
     # "slice" type nodes
     SLICE = EXTSLICE = INDEX = handleChildren
@@ -406,6 +409,72 @@ class Checker(object):
                             node.lineno, varn, self.scope[varn].source.lineno)
 
         self.handleChildren(node)
+
+    def BINOP(self, node):
+        if isinstance(node.op, _ast.Mod) and isinstance(node.left, _ast.Str):
+            dictfmt = '%(' in node.left.s
+            nplaces = 0
+            for m in interpol.finditer(node.left.s):
+                if m.group()[-1] != '%':
+                    nplaces += 1 + m.group().count('*')
+            if isinstance(node.right, _ast.Dict):
+                if not dictfmt:
+                    self.report(messages.StringFormattingProblem,
+                                node.lineno, 'tuple', 'dict')
+            else:
+                if isinstance(node.right, _ast.Tuple):
+                    if dictfmt:
+                        self.report(messages.StringFormattingProblem,
+                                    node.lineno, 'dict', 'tuple')
+                    else:
+                        nobjects = len(node.right.elts)
+                        if nobjects != nplaces:
+                            self.report(messages.StringFormattingProblem,
+                                        node.lineno, nplaces, nobjects)
+            self.handleNode(node.right, node)
+        else:
+            self.handleNode(node.left, node)
+            self.handleNode(node.right, node)
+
+    def ATTRIBUTE(self, node):
+        if isinstance(node.value, _ast.Str) and node.attr == 'format' and \
+           isinstance(node.parent, _ast.Call) and node is node.parent.func:
+            try:
+                num = 0
+                maxnum = -1
+                kwds = set()
+                for lit, fn, fs, conv in node.value.s._formatter_parser():
+                    if lit:
+                        continue
+                    fn = fn.partition('.')[0].partition('[')[0]
+                    if not fn:
+                        num += 1
+                    elif fn.isdigit():
+                        maxnum = max(maxnum, int(fn))
+                    else:
+                        kwds.add(fn)
+            except ValueError, err:
+                self.report(messages.StringFormatProblem,
+                            node.lineno, str(err))
+            else:
+                callnode = node.parent
+                # can only really check if no *args or **kwds are used
+                if not (callnode.starargs or callnode.kwargs):
+                    nargs = len(node.parent.args)
+                    kwdset = set(kwd.arg for kwd in node.parent.keywords)
+                    if nargs < num:
+                        self.report(messages.StringFormatProblem, node.lineno,
+                                    'not enough positional args (need %s)' % num)
+                    elif nargs < maxnum+1:
+                        self.report(messages.StringFormatProblem, node.lineno,
+                                    'not enough positional args (need %s)' %
+                                    (maxnum+1))
+                    missing = kwds - kwdset
+                    if missing:
+                        self.report(messages.StringFormatProblem, node.lineno,
+                                    'keyword args missing: %s' % ', '.join(missing))
+        else:
+            self.handleNode(node.value, node)
 
     def NAME(self, node):
         context = node.ctx.__class__.__name__
