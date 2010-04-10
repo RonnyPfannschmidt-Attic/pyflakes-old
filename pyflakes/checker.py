@@ -1,5 +1,5 @@
 # -*- test-case-name: pyflakes -*-
-# (c) 2005-2008 Divmod, Inc.
+# (c) 2005-2010 Divmod, Inc.
 # See LICENSE file for details
 
 import __builtin__
@@ -311,21 +311,33 @@ class Checker(object):
 
     # "stmt" type nodes
     RETURN = DELETE = PRINT = WHILE = IF = WITH = RAISE = TRYEXCEPT = \
-    TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
+        TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
+
+    # XXX continue and break untested
     CONTINUE = BREAK = PASS = ignore
-    # "expr" type nodes
+
+    # "expr" type nodes. XXX lambda and set untested.
     BOOLOP = BINOP = UNARYOP = LAMBDA = IFEXP = DICT = SET = YIELD = COMPARE = \
     CALL = REPR = ATTRIBUTE = SUBSCRIPT = LIST = TUPLE = handleChildren
+
+    # XXX ellipsis untested
     NUM = STR = ELLIPSIS = ignore
-    # "slice" type nodes
+
+    # "slice" type nodes. XXX extslice untested.
     SLICE = EXTSLICE = INDEX = handleChildren
+
     # expression contexts are node instances too, though being constants
+    # XXX del, augload, augstore, param untested.
     LOAD = STORE = DEL = AUGLOAD = AUGSTORE = PARAM = ignore
+
     # same for operators
+    # XXX NOTEQ, LT, LTE, GTE, IS, ISNOT, IN, NOTIN untested
     AND = OR = ADD = SUB = MULT = DIV = MOD = POW = LSHIFT = RSHIFT = \
     BITOR = BITXOR = BITAND = FLOORDIV = INVERT = NOT = UADD = USUB = \
     EQ = NOTEQ = LT = LTE = GT = GTE = IS = ISNOT = IN = NOTIN = ignore
+
     # additional node types
+    # XXX ARGUMENTS untested
     COMPREHENSION = EXCEPTHANDLER = ARGUMENTS = KEYWORD = handleChildren
 
     def addBinding(self, lineno, value, reportRedef=True):
@@ -374,6 +386,7 @@ class Checker(object):
             self.handleNode(gen, node)
         self.handleNode(node.elt, node)
 
+    # XXX SETCOMP untested
     GENERATOREXP = SETCOMP = LISTCOMP
 
     # dictionary comprehensions; introduced in Python 2.7
@@ -563,11 +576,11 @@ class Checker(object):
             self.handleNode(deco, node)
         for baseNode in node.bases:
             self.handleNode(baseNode, node)
-        self.addBinding(node.lineno, Binding(node.name, node))
         self.pushClassScope()
         for stmt in node.body:
             self.handleNode(stmt, node)
         self.popScope()
+        self.addBinding(node.lineno, Binding(node.name, node))
 
     def ASSIGN(self, node):
         self.handleNode(node.value, node)
