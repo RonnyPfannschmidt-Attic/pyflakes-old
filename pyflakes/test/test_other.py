@@ -1,4 +1,4 @@
-# (c) 2005-2008 Divmod, Inc.
+# (c) 2005-2010 Divmod, Inc.
 # See LICENSE file for details
 
 """
@@ -83,6 +83,46 @@ class Test(harness.Test):
         class foo(foo):
             pass
         ''', m.UndefinedName)
+
+
+    def test_classNameUndefinedInClassBody(self):
+        """
+        If a class name is used in the body of that class's definition and
+        the name is not already defined, a warning is emitted.
+        """
+        self.flakes('''
+        class foo:
+            foo
+        ''', m.UndefinedName)
+
+
+    def test_classNameDefinedPreviously(self):
+        """
+        If a class name is used in the body of that class's definition and
+        the name was previously defined in some other way, no warning is
+        emitted.
+        """
+        self.flakes('''
+        foo = None
+        class foo:
+            foo
+        ''')
+
+
+    def test_additionalSyntax(self):
+        """
+        Exercise all syntax not otherwise explicitly tested.
+        """
+        self.flakes('''
+        def f(x):
+            a = x[..., ...]
+            for b in a:
+                break
+                continue
+            return a != b, a < b, a <= b, a >= b, a is b, a is not b, \
+                   a in b, a not in b
+        g = lambda x, y: x + y
+        ''')
 
 
 
@@ -447,3 +487,29 @@ class Python25Test(harness.Test):
         with bar as bar:
             pass
         ''', m.UndefinedName)
+
+
+
+class Python27Test(harness.Test):
+    """
+    Tests for checking of syntax only available in Python 2.7 and newer.
+    """
+    if version_info < (2, 7):
+        skip = "Python 2.7 required for dict/set comprehension tests"
+
+    def test_dictComprehension(self):
+        """
+        Dict comprehensions are properly handled.
+        """
+        self.flakes('''
+        a = {1: x for x in range(10)}
+        ''')
+
+    def test_setComprehensionAndLiteral(self):
+        """
+        Set comprehensions are properly handled.
+        """
+        self.flakes('''
+        a = {1, 2, 3}
+        b = {x for x in range(10)}
+        ''')

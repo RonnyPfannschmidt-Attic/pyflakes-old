@@ -517,6 +517,11 @@ class Test(harness.Test):
         x = 5
         from __future__ import division
         ''', m.LateFutureImport)
+        self.flakes('''
+        from foo import bar
+        from __future__ import division
+        bar
+        ''', m.LateFutureImport)
 
 
 

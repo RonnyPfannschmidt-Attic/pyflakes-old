@@ -1,5 +1,5 @@
 # -*- test-case-name: pyflakes -*-
-# (c) 2005-2008 Divmod, Inc.
+# (c) 2005-2010 Divmod, Inc.
 # See LICENSE file for details
 
 import __builtin__
@@ -288,6 +288,10 @@ class Checker(object):
             self.handleNode(node, tree)
 
     def isDocstring(self, node):
+        """
+        Determine if the given node is a docstring, as long as it is at the
+        correct place in the node tree.
+        """
         return isinstance(node, _ast.Str) or \
                (isinstance(node, _ast.Expr) and
                 isinstance(node.value, _ast.Str))
@@ -314,22 +318,29 @@ class Checker(object):
 
     # "stmt" type nodes
     DELETE = PRINT = WHILE = IF = WITH = RAISE = TRYEXCEPT = \
-    TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
+        TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
+
     CONTINUE = BREAK = PASS = ignore
+
     # "expr" type nodes
     BOOLOP = UNARYOP = LAMBDA = IFEXP = DICT = SET = YIELD = COMPARE = \
     CALL = REPR = SUBSCRIPT = LIST = TUPLE = handleChildren
+
     NUM = STR = ELLIPSIS = ignore
+
     # "slice" type nodes
     SLICE = EXTSLICE = INDEX = handleChildren
+
     # expression contexts are node instances too, though being constants
     LOAD = STORE = DEL = AUGLOAD = AUGSTORE = PARAM = ignore
+
     # same for operators
     AND = OR = ADD = SUB = MULT = DIV = MOD = POW = LSHIFT = RSHIFT = \
     BITOR = BITXOR = BITAND = FLOORDIV = INVERT = NOT = UADD = USUB = \
     EQ = NOTEQ = LT = LTE = GT = GTE = IS = ISNOT = IN = NOTIN = ignore
+
     # additional node types
-    COMPREHENSION = EXCEPTHANDLER = ARGUMENTS = KEYWORD = handleChildren
+    COMPREHENSION = EXCEPTHANDLER = KEYWORD = handleChildren
 
     def addBinding(self, lineno, value, reportRedef=True):
         '''Called when a binding is altered.
@@ -380,11 +391,11 @@ class Checker(object):
     GENERATOREXP = SETCOMP = LISTCOMP
 
     # dictionary comprehensions; introduced in Python 2.7
-    #def DICTCOMP(self, node):
-    #    for gen in node.generators:
-    #        self.handleNode(gen, node)
-    #    self.handleNode(node.key, node)
-    #    self.handleNode(node.value, node)
+    def DICTCOMP(self, node):
+        for gen in node.generators:
+            self.handleNode(gen, node)
+        self.handleNode(node.key, node)
+        self.handleNode(node.value, node)
 
     def FOR(self, node):
         """
@@ -477,6 +488,9 @@ class Checker(object):
             self.handleNode(node.value, node)
 
     def NAME(self, node):
+        """
+        Handle occurrence of Name (which can be a load/store/delete access.)
+        """
         context = node.ctx.__class__.__name__
         # Locate the name in locals / function / globals scopes.
         if context in ('Load', 'AugLoad'):
@@ -542,8 +556,7 @@ class Checker(object):
                           (_ast.For, _ast.comprehension, _ast.Tuple, _ast.List)):
                 binding = Binding(node.id, node)
             elif (node.id == '__all__' and
-                  isinstance(self.scope, ModuleScope) and
-                  isinstance(node.parent, _ast.Assign)):
+                  isinstance(self.scope, ModuleScope)):
                 binding = ExportBinding(node.id, node.parent.value)
             else:
                 binding = Assignment(node.id, node)
@@ -632,11 +645,11 @@ class Checker(object):
             self.handleNode(deco, node)
         for baseNode in node.bases:
             self.handleNode(baseNode, node)
-        self.addBinding(node.lineno, Binding(node.name, node))
         self.pushClassScope()
         for stmt in node.body:
             self.handleNode(stmt, node)
         self.popScope()
+        self.addBinding(node.lineno, Binding(node.name, node))
 
     def ASSIGN(self, node):
         self.handleNode(node.value, node)
