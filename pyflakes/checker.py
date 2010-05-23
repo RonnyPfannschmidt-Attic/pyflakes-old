@@ -285,6 +285,10 @@ class Checker(object):
             self.handleNode(node, tree)
 
     def isDocstring(self, node):
+        """
+        Determine if the given node is a docstring, as long as it is at the
+        correct place in the node tree.
+        """
         return isinstance(node, _ast.Str) or \
                (isinstance(node, _ast.Expr) and
                 isinstance(node.value, _ast.Str))
@@ -313,32 +317,27 @@ class Checker(object):
     RETURN = DELETE = PRINT = WHILE = IF = WITH = RAISE = TRYEXCEPT = \
         TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
 
-    # XXX continue and break untested
     CONTINUE = BREAK = PASS = ignore
 
-    # "expr" type nodes. XXX lambda and set untested.
+    # "expr" type nodes
     BOOLOP = BINOP = UNARYOP = LAMBDA = IFEXP = DICT = SET = YIELD = COMPARE = \
     CALL = REPR = ATTRIBUTE = SUBSCRIPT = LIST = TUPLE = handleChildren
 
-    # XXX ellipsis untested
     NUM = STR = ELLIPSIS = ignore
 
-    # "slice" type nodes. XXX extslice untested.
+    # "slice" type nodes
     SLICE = EXTSLICE = INDEX = handleChildren
 
     # expression contexts are node instances too, though being constants
-    # XXX del, augload, augstore, param untested.
     LOAD = STORE = DEL = AUGLOAD = AUGSTORE = PARAM = ignore
 
     # same for operators
-    # XXX NOTEQ, LT, LTE, GTE, IS, ISNOT, IN, NOTIN untested
     AND = OR = ADD = SUB = MULT = DIV = MOD = POW = LSHIFT = RSHIFT = \
     BITOR = BITXOR = BITAND = FLOORDIV = INVERT = NOT = UADD = USUB = \
     EQ = NOTEQ = LT = LTE = GT = GTE = IS = ISNOT = IN = NOTIN = ignore
 
     # additional node types
-    # XXX ARGUMENTS untested
-    COMPREHENSION = EXCEPTHANDLER = ARGUMENTS = KEYWORD = handleChildren
+    COMPREHENSION = EXCEPTHANDLER = KEYWORD = handleChildren
 
     def addBinding(self, lineno, value, reportRedef=True):
         '''Called when a binding is altered.
@@ -386,15 +385,14 @@ class Checker(object):
             self.handleNode(gen, node)
         self.handleNode(node.elt, node)
 
-    # XXX SETCOMP untested
     GENERATOREXP = SETCOMP = LISTCOMP
 
     # dictionary comprehensions; introduced in Python 2.7
-    #def DICTCOMP(self, node):
-    #    for gen in node.generators:
-    #        self.handleNode(gen, node)
-    #    self.handleNode(node.key, node)
-    #    self.handleNode(node.value, node)
+    def DICTCOMP(self, node):
+        for gen in node.generators:
+            self.handleNode(gen, node)
+        self.handleNode(node.key, node)
+        self.handleNode(node.value, node)
 
     def FOR(self, node):
         """
@@ -421,6 +419,9 @@ class Checker(object):
         self.handleChildren(node)
 
     def NAME(self, node):
+        """
+        Handle occurrence of Name (which can be a load/store/delete access.)
+        """
         context = node.ctx.__class__.__name__
         # Locate the name in locals / function / globals scopes.
         if context in ('Load', 'AugLoad'):
@@ -486,8 +487,7 @@ class Checker(object):
                           (_ast.For, _ast.comprehension, _ast.Tuple, _ast.List)):
                 binding = Binding(node.id, node)
             elif (node.id == '__all__' and
-                  isinstance(self.scope, ModuleScope) and
-                  isinstance(node.parent, _ast.Assign)):
+                  isinstance(self.scope, ModuleScope)):
                 binding = ExportBinding(node.id, node.parent.value)
             else:
                 binding = Assignment(node.id, node)
