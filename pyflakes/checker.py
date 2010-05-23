@@ -313,7 +313,7 @@ class Checker(object):
         pass
 
     # "stmt" type nodes
-    RETURN = DELETE = PRINT = WHILE = IF = WITH = RAISE = TRYEXCEPT = \
+    DELETE = PRINT = WHILE = IF = WITH = RAISE = TRYEXCEPT = \
     TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
     CONTINUE = BREAK = PASS = ignore
     # "expr" type nodes
@@ -676,3 +676,17 @@ class Checker(object):
             if node.module == '__future__':
                 importation.used = (self.scope, node.lineno)
             self.addBinding(node.lineno, importation)
+
+    def RETURN(self, node):
+        if not node.value:
+            return
+        self.handleNode(node.value, node)
+        if isinstance(node.value, _ast.Name):
+            name = node.value.id
+        elif isinstance(node.value, _ast.Call) and \
+           isinstance(node.value.func, _ast.Name):
+            name = node.value.func.id
+        else:
+            return
+        if name.endswith('Error') or name.endswith('Exception'):
+            self.report(messages.ExceptionReturn, node.lineno, name)

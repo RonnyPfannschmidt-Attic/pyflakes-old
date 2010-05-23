@@ -106,3 +106,14 @@ class StringFormatProblem(Message):
     def __init__(self, filename, lineno, msg):
         Message.__init__(self, filename, lineno)
         self.message_args = (msg,)
+
+
+class ExceptionReturn(Message):
+    """
+    Indicates that an Error or Exception is returned instead of raised.
+    """
+
+    message = 'exception %r is returned'
+    def __init__(self, filename, lineno, name):
+        Message.__init__(self, filename, lineno)
+        self.message_args = (name,)
