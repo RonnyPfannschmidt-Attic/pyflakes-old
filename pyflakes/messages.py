@@ -124,6 +124,6 @@ class TupleCall(Message):
     Indicates that an Error or Exception is returned instead of raised.
     """
 
-    message = 'calling tuple literal'
+    message = 'calling tuple literal, forgot a comma?'
     def __init__(self, filename, lineno):
         Message.__init__(self, filename, lineno)
