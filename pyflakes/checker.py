@@ -324,7 +324,7 @@ class Checker(object):
 
     # "expr" type nodes
     BOOLOP = UNARYOP = LAMBDA = IFEXP = DICT = SET = YIELD = COMPARE = \
-    CALL = REPR = SUBSCRIPT = LIST = TUPLE = handleChildren
+        REPR = SUBSCRIPT = LIST = TUPLE = handleChildren
 
     NUM = STR = ELLIPSIS = ignore
 
@@ -446,6 +446,11 @@ class Checker(object):
         else:
             self.handleNode(node.left, node)
             self.handleNode(node.right, node)
+
+    def CALL(self, node):
+        if isinstance(node.func, _ast.Tuple):
+            self.report(messages.TupleCall, node.lineno)
+        self.handleChildren(node)
 
     def ATTRIBUTE(self, node):
         if isinstance(node.value, _ast.Str) and node.attr == 'format' and \

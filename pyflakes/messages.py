@@ -117,3 +117,13 @@ class ExceptionReturn(Message):
     def __init__(self, filename, lineno, name):
         Message.__init__(self, filename, lineno)
         self.message_args = (name,)
+
+
+class TupleCall(Message):
+    """
+    Indicates that an Error or Exception is returned instead of raised.
+    """
+
+    message = 'calling tuple literal'
+    def __init__(self, filename, lineno):
+        Message.__init__(self, filename, lineno)
