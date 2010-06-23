@@ -1,7 +1,10 @@
 #!/usr/bin/python
 # (c) 2005 Divmod, Inc.  See LICENSE file for details
 
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:    
+    from distutils.core import setup
 
 setup(
     name="pyflakes",
