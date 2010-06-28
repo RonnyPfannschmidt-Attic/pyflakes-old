@@ -6,6 +6,7 @@ Implementation of the command-line I{pyflakes} tool.
 import _ast
 import sys
 import os
+import optparse
 
 checker = __import__('pyflakes.checker').checker
 
@@ -30,7 +31,7 @@ def check(codeString, filename):
         w.messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
         for warning in w.messages:
             print warning
-        return len(w.messages)
+        return w.messages
 
 
 def checkPath(filename):
@@ -46,6 +47,11 @@ def checkPath(filename):
         return 1
 
 def main():
+    parser = optparse.OptionParser(usage='usage: %prog [options] module')
+    parser.add_option('-r', '--report', dest='report', help='generate report')
+
+    (options, args) = parser.parse_args()
+    
     warnings = 0
     args = sys.argv[1:]
     if args:
@@ -60,4 +66,18 @@ def main():
     else:
         warnings += check(sys.stdin.read(), '<stdin>')
 
-    raise SystemExit(warnings > 0)
+    # if options.report:
+    #     print >> sys.stderr, "Report"
+    #     print >> sys.stderr, "======"
+    #     print >> sys.stderr, ""
+    #     print >> sys.stderr, "Messages by category"
+    #     print >> sys.stderr, "--------------------"
+    #     print >> sys.stderr, ""
+    #     print >> sys.stderr, "+-----------+--------+"
+    #     print >> sys.stderr, "|type       |number  |"
+    #     print >> sys.stderr, "+===========+========+"
+    #     print >> sys.stderr, "|warning    |  |"
+    #     print >> sys.stderr, "+-----------+--------+"
+        
+
+    # raise SystemExit(len(warnings) > 0)
