@@ -52,7 +52,7 @@ def main():
 
     (options, args) = parser.parse_args()
     
-    warnings = 0
+    warnings = []
     args = sys.argv[1:]
     if args:
         for arg in args:
