@@ -80,4 +80,4 @@ def main():
     #     print >> sys.stderr, "+-----------+--------+"
         
 
-    # raise SystemExit(len(warnings) > 0)
+    raise SystemExit(sum(1 for w in warnings if w.level == 'E') > 0)
