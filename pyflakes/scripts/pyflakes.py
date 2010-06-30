@@ -10,7 +10,7 @@ import optparse
 
 checker = __import__('pyflakes.checker').checker
 
-def check(codeString, filename):
+def check(codeString, filename, exclude=()):
     try:
         tree = compile(codeString, filename, 'exec', _ast.PyCF_ONLY_AST)
     except (SyntaxError, IndentationError):
@@ -30,54 +30,41 @@ def check(codeString, filename):
         w = checker.Checker(tree, filename)
         w.messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
         for warning in w.messages:
-            print warning
+            if warning.level not in exclude:
+                print warning
         return w.messages
 
 
-def checkPath(filename):
+def checkPath(filename, exclude=()):
     """
     Check the given path, printing out any warnings detected.
 
     @return: the number of warnings printed
     """
     if os.path.exists(filename):
-        return check(file(filename, 'U').read() + '\n', filename)
+        return check(file(filename, 'U').read() + '\n', filename, exclude)
     else:
         print >> sys.stderr, '%s: no such file' % (filename,)
         return 1
 
 def main():
     parser = optparse.OptionParser(usage='usage: %prog [options] module')
-    parser.add_option('-r', '--report', dest='report', help='generate report')
+    parser.add_option('-x', '--exclude', action='append', dest='exclude', help='exclude levels', default=[])
 
     (options, args) = parser.parse_args()
     
     warnings = []
-    args = sys.argv[1:]
+    args = ' '.join(args)
     if args:
         for arg in args:
             if os.path.isdir(arg):
                 for dirpath, dirnames, filenames in os.walk(arg):
                     for filename in filenames:
                         if filename.endswith('.py'):
-                            warnings += checkPath(os.path.join(dirpath, filename))
+                            warnings += checkPath(os.path.join(dirpath, filename), options.exclude)
             else:
-                warnings += checkPath(arg)
+                warnings += checkPath(arg, options.exclude)
     else:
         warnings += check(sys.stdin.read(), '<stdin>')
-
-    # if options.report:
-    #     print >> sys.stderr, "Report"
-    #     print >> sys.stderr, "======"
-    #     print >> sys.stderr, ""
-    #     print >> sys.stderr, "Messages by category"
-    #     print >> sys.stderr, "--------------------"
-    #     print >> sys.stderr, ""
-    #     print >> sys.stderr, "+-----------+--------+"
-    #     print >> sys.stderr, "|type       |number  |"
-    #     print >> sys.stderr, "+===========+========+"
-    #     print >> sys.stderr, "|warning    |  |"
-    #     print >> sys.stderr, "+-----------+--------+"
-        
 
     raise SystemExit(sum(1 for w in warnings if w.level == 'E') > 0)
