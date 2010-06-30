@@ -7,6 +7,7 @@ import _ast
 import sys
 import os
 import optparse
+import fnmatch
 
 checker = __import__('pyflakes.checker').checker
 
@@ -48,8 +49,27 @@ def checkPath(filename, exclude=()):
         return 1
 
 def main():
+    def traverse_path(warnings, dirpath, dirnames, filenames):
+        if dirpath.startswith('./'):
+            dirpath = dirpath[2:]
+        
+        # Exclusions
+        for p in options.exclude_files:
+            if dirpath.startswith(p):
+                return
+
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            # Exclusions
+            for p in options.exclude_files:
+                if path.startswith(p):
+                    return
+            if filename.endswith('.py'):
+                warnings += checkPath(path, options.exclude)
+    
     parser = optparse.OptionParser(usage='usage: %prog [options] module')
     parser.add_option('-x', '--exclude', action='append', dest='exclude', help='exclude levels', default=[])
+    parser.add_option('-X', '--exclude-files', action='append', dest='exclude_files', help='exclude files', default=[])
 
     (options, args) = parser.parse_args()
     
@@ -57,11 +77,11 @@ def main():
     args = ' '.join(args)
     if args:
         for arg in args:
+            if arg == '.':
+                arg = './'
             if os.path.isdir(arg):
                 for dirpath, dirnames, filenames in os.walk(arg):
-                    for filename in filenames:
-                        if filename.endswith('.py'):
-                            warnings += checkPath(os.path.join(dirpath, filename), options.exclude)
+                    traverse_path(warnings, dirpath, dirnames, filenames)
             else:
                 warnings += checkPath(arg, options.exclude)
     else:
