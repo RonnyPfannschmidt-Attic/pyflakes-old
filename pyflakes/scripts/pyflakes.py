@@ -20,13 +20,13 @@ def check(codeString, filename, exclude=()):
             (lineno, offset, line) = value[1][1:]
         except IndexError:
             print >> sys.stderr, 'could not compile %r' % (filename,)
-            return 1
+            raise SystemExit
         if line.endswith("\n"):
             line = line[:-1]
         print >> sys.stderr, '%s:%d: could not compile' % (filename, lineno)
         print >> sys.stderr, line
         print >> sys.stderr, " " * (offset-2), "^"
-        return 1
+        raise SystemExit
     else:
         w = checker.Checker(tree, filename)
         w.messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
@@ -46,7 +46,7 @@ def checkPath(filename, exclude=()):
         return check(file(filename, 'U').read() + '\n', filename, exclude)
     else:
         print >> sys.stderr, '%s: no such file' % (filename,)
-        return 1
+        raise SystemExit
 
 def main():
     def traverse_path(warnings, dirpath, dirnames, filenames):
