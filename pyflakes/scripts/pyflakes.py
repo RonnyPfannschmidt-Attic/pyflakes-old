@@ -87,4 +87,5 @@ def main():
     else:
         warnings += check(sys.stdin.read(), '<stdin>')
 
-    raise SystemExit(sum(1 for w in warnings if w.level == 'E') > 0)
+    if sum(1 for w in warnings if w.level == 'E') > 0:
+        raise SystemExit
