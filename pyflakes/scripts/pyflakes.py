@@ -77,9 +77,9 @@ def main():
     args = ' '.join(args)
     if args:
         for arg in args:
-            if arg == '.':
-                arg = './'
             if os.path.isdir(arg):
+                if arg == '.':
+                    arg = './'
                 for dirpath, dirnames, filenames in os.walk(arg):
                     traverse_path(warnings, dirpath, dirnames, filenames)
             else:
