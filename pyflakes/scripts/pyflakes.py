@@ -72,9 +72,7 @@ def main():
     parser.add_option('-X', '--exclude-files', action='append', dest='exclude_files', help='exclude files', default=[])
 
     (options, args) = parser.parse_args()
-    
     warnings = []
-    args = ' '.join(args)
     if args:
         for arg in args:
             if os.path.isdir(arg):
