@@ -193,6 +193,7 @@ class Checker(object):
         self.filename = filename
         self.scopeStack = [ModuleScope()]
         self.futuresAllowed = True
+        self.noRedef = 0
         self.handleChildren(tree)
         self._runDeferred(self._deferredFunctions)
         # Set _deferredFunctions to None so that deferFunction will fail
@@ -317,7 +318,7 @@ class Checker(object):
         pass
 
     # "stmt" type nodes
-    DELETE = PRINT = WHILE = IF = WITH = RAISE = TRYEXCEPT = \
+    DELETE = PRINT = WHILE = IF = WITH = RAISE = \
         TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
 
     CONTINUE = BREAK = PASS = ignore
@@ -362,7 +363,8 @@ class Checker(object):
                 if (isinstance(existing, Importation)
                         and not existing.used
                         and (not isinstance(value, Importation) or value.fullName == existing.fullName)
-                        and reportRedef):
+                        and reportRedef
+                        and self.noRedef == 0):
 
                     self.report(messages.RedefinedWhileUnused,
                                 lineno, value.name, scope[value.name].source.lineno)
@@ -708,3 +710,28 @@ class Checker(object):
             return
         if name.endswith('Error') or name.endswith('Exception'):
             self.report(messages.ExceptionReturn, node.lineno, name)
+
+    def TRYEXCEPT(self, node):
+        """
+        Handle C{try}-C{except}.  In particular, do not report redefinitions
+        when occurring in an "except ImportError" block.
+        """
+        for stmt in node.body:
+            self.handleNode(stmt, node)
+
+        for handler in node.handlers:
+            isImport = (handler.type and isinstance(handler.type, _ast.Name) and
+                        handler.type.id == 'ImportError')
+            if isImport:
+                self.noRedef += 1
+            if handler.type:
+                self.handleNode(handler.type, node)
+                if handler.name:
+                    self.handleNode(handler.name, node)
+            for stmt in handler.body:
+                self.handleNode(stmt, node)
+            if isImport:
+                self.noRedef -= 1
+
+        for stmt in node.orelse:
+            self.handleNode(stmt, node)
