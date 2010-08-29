@@ -122,7 +122,7 @@ class ExportBinding(Binding):
         Return a list of the names referenced by this binding.
         """
         names = []
-        if isinstance(self.source, _ast.List):
+        if isinstance(self.source, (_ast.Tuple, _ast.List)):
             for node in self.source.elts:
                 if isinstance(node, _ast.Str):
                     names.append(node.s)
