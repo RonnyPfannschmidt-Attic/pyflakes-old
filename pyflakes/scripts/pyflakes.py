@@ -25,7 +25,14 @@ def check(codeString, filename):
     """
     # First, compile into an AST and handle syntax errors.
     try:
-        tree = compile(codeString, filename, "exec", _ast.PyCF_ONLY_AST)
+        try:
+            tree = compile(codeString, filename, "exec", _ast.PyCF_ONLY_AST)
+            lnooffset = 0
+        except SyntaxError:
+            # HACK: try again with print function
+            tree = compile('from __future__ import print_function\n' +
+                           codeString, filename, "exec", _ast.PyCF_ONLY_AST)
+            lnooffset = 1
     except SyntaxError, value:
         msg = value.args[0]
 
@@ -52,7 +59,7 @@ def check(codeString, filename):
         return 1
     else:
         # Okay, it's syntactically valid.  Now check it.
-        w = checker.Checker(tree, filename)
+        w = checker.Checker(tree, filename, lnooffset)
         w.messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
         for warning in w.messages:
             print warning

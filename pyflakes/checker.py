@@ -185,12 +185,13 @@ class Checker(object):
     nodeDepth = 0
     traceTree = False
 
-    def __init__(self, tree, filename='(none)'):
+    def __init__(self, tree, filename='(none)', lnooffset=0):
         self._deferredFunctions = []
         self._deferredAssignments = []
         self.dead_scopes = []
         self.messages = []
         self.filename = filename
+        self.lnooffset = lnooffset
         self.scopeStack = [ModuleScope()]
         self.futuresAllowed = True
         self.noRedef = 0
@@ -282,7 +283,9 @@ class Checker(object):
         self.scopeStack.append(ClassScope())
 
     def report(self, messageClass, *args, **kwargs):
-        self.messages.append(messageClass(self.filename, *args, **kwargs))
+        msg = messageClass(self.filename, *args, **kwargs)
+        msg.lineno -= self.lnooffset
+        self.messages.append(msg)
 
     def handleChildren(self, tree):
         for node in iter_child_nodes(tree):
