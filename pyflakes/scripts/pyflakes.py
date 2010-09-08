@@ -79,7 +79,7 @@ def main():
         for arg in args:
             if os.path.isdir(arg):
                 for dirpath, dirnames, filenames in os.walk(arg):
-                    for filename in sorted(filenames):
+                    for filename in filenames:
                         if filename.endswith('.py'):
                             warnings += checkPath(os.path.join(dirpath, filename))
             else:
