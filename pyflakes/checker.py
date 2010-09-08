@@ -14,19 +14,21 @@ interpol = re.compile(r'%(\([a-zA-Z0-9_]+\))?[-#0 +]*([0-9]+|[*])?'
 
 # utility function to iterate over an AST node's children, adapted
 # from Python 2.6's standard ast module
-
-def iter_child_nodes(node, astcls=_ast.AST):
-    """
-    Yield all direct child nodes of *node*, that is, all fields that are nodes
-    and all items of fields that are lists of nodes.
-    """
-    for name in node._fields:
-        field = getattr(node, name, None)
-        if isinstance(field, astcls):
-            yield field
-        elif isinstance(field, list):
-            for item in field:
-                if isinstance(item, astcls):
+try:
+    import ast
+    iter_child_nodes = ast.iter_child_nodes
+except (ImportError, AttributeError):
+    def iter_child_nodes(node, astcls=_ast.AST):
+        """
+        Yield all direct child nodes of *node*, that is, all fields that are nodes
+        and all items of fields that are lists of nodes.
+        """
+        for name in node._fields:
+            field = getattr(node, name, None)
+            if isinstance(field, astcls):
+                yield field
+            elif isinstance(field, list):
+                for item in field:
                     yield item
 
 
@@ -327,7 +329,7 @@ class Checker(object):
     CONTINUE = BREAK = PASS = ignore
 
     # "expr" type nodes
-    BOOLOP = UNARYOP = LAMBDA = IFEXP = DICT = SET = YIELD = COMPARE = \
+    BOOLOP = UNARYOP = IFEXP = DICT = SET = YIELD = COMPARE = \
         REPR = SUBSCRIPT = LIST = TUPLE = handleChildren
 
     NUM = STR = ELLIPSIS = ignore
@@ -501,9 +503,8 @@ class Checker(object):
         """
         Handle occurrence of Name (which can be a load/store/delete access.)
         """
-        context = node.ctx.__class__.__name__
         # Locate the name in locals / function / globals scopes.
-        if context in ('Load', 'AugLoad'):
+        if isinstance(node.ctx, (_ast.Load, _ast.AugLoad)):
             # try local scope
             importStarred = self.scope.importStarred
             try:
@@ -541,7 +542,7 @@ class Checker(object):
                         pass
                     else:
                         self.report(messages.UndefinedName, node.lineno, node.id)
-        elif context in ('Store', 'AugStore'):
+        elif isinstance(node.ctx, (_ast.Store, _ast.AugStore)):
             # if the name hasn't already been defined in the current scope
             if isinstance(self.scope, FunctionScope) and node.id not in self.scope:
                 # for each function or module scope above us
@@ -573,7 +574,7 @@ class Checker(object):
             if node.id in self.scope:
                 binding.used = self.scope[node.id].used
             self.addBinding(node.lineno, binding)
-        elif context == 'Del':
+        elif isinstance(node.ctx, _ast.Del):
             if isinstance(self.scope, FunctionScope) and \
                    node.id in self.scope.globals:
                 del self.scope.globals[node.id]
@@ -582,7 +583,8 @@ class Checker(object):
         else:
             # must be a Param context -- this only happens for names in function
             # arguments, but these aren't dispatched through here
-            assert False, 'got impossible expression context ' + context
+            raise RuntimeError(
+                "Got impossible expression context: %r" % (node.ctx,))
 
 
     def FUNCTIONDEF(self, node):

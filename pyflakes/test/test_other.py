@@ -109,19 +109,79 @@ class Test(harness.Test):
         ''')
 
 
-    def test_additionalSyntax(self):
+    def test_comparison(self):
         """
-        Exercise all syntax not otherwise explicitly tested.
+        If a defined name is used on either side of any of the six comparison
+        operators, no warning is emitted.
         """
         self.flakes('''
-        def f(x):
-            a = x[..., ...]
-            for b in a:
-                break
-                continue
-            return a != b, a < b, a <= b, a >= b, a is b, a is not b, \
-                   a in b, a not in b
-        g = lambda x, y: x + y
+        x = 10
+        y = 20
+        x < y
+        x <= y
+        x == y
+        x != y
+        x >= y
+        x > y
+        ''')
+
+
+    def test_identity(self):
+        """
+        If a deefined name is used on either side of an identity test, no
+        warning is emitted.
+        """
+        self.flakes('''
+        x = 10
+        y = 20
+        x is y
+        x is not y
+        ''')
+
+
+    def test_containment(self):
+        """
+        If a defined name is used on either side of a containment test, no
+        warning is emitted.
+        """
+        self.flakes('''
+        x = 10
+        y = 20
+        x in y
+        x not in y
+        ''')
+
+
+    def test_loopControl(self):
+        """
+        break and continue statements are supported.
+        """
+        self.flakes('''
+        for x in [1, 2]:
+            break
+        ''')
+        self.flakes('''
+        for x in [1, 2]:
+            continue
+        ''')
+
+
+    def test_ellipsis(self):
+        """
+        Ellipsis in a slice is supported.
+        """
+        self.flakes('''
+        [1, 2][...]
+        ''')
+
+
+    def test_extendedSlice(self):
+        """
+        Extended slices are supported.
+        """
+        self.flakes('''
+        x = 3
+        [1, 2][x,:]
         ''')
 
 
