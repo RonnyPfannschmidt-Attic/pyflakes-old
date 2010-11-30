@@ -9,6 +9,9 @@ import os
 import optparse
 import fnmatch
 
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+
 checker = __import__('pyflakes.checker').checker
 
 def check(codeString, filename, exclude=()):
@@ -86,3 +89,6 @@ def main():
         warnings += check(sys.stdin.read(), '<stdin>')
 
     raise SystemExit(sum(1 for w in warnings if w.level == 'E') > 0)
+
+if __name__ == '__main__':
+    main()
