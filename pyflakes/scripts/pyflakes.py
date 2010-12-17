@@ -7,16 +7,14 @@ import _ast
 import sys
 import os
 import optparse
-import fnmatch
 
-import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 checker = __import__('pyflakes.checker').checker
 
 def check(codeString, filename, exclude=()):
     try:
-        tree = compile(codeString, filename, 'exec', _ast.PyCF_ONLY_AST)
+        tree = compile(codeString.strip(), filename, 'exec', _ast.PyCF_ONLY_AST)
     except (SyntaxError, IndentationError):
         value = sys.exc_info()[1]
         try:
