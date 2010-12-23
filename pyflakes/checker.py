@@ -348,6 +348,15 @@ class Checker(object):
     # additional node types
     COMPREHENSION = EXCEPTHANDLER = KEYWORD = handleChildren
 
+    def hasParent(self, node, kind):
+        parent = getattr(node, 'parent', None)
+        while True:
+            if not parent:
+                return False
+            elif isinstance(parent, kind):
+                return True
+            parent = getattr(parent, 'parent', None)
+
     def addBinding(self, lineno, value, reportRedef=True):
         '''Called when a binding is altered.
 
@@ -362,6 +371,8 @@ class Checker(object):
             self.report(messages.RedefinedFunction,
                         lineno, value.name, self.scope[value.name].source.lineno)
 
+        redefinedWhileUnused = False
+
         if not isinstance(self.scope, ClassScope):
             for scope in self.scopeStack[::-1]:
                 existing = scope.get(value.name)
@@ -370,9 +381,19 @@ class Checker(object):
                         and (not isinstance(value, Importation) or value.fullName == existing.fullName)
                         and reportRedef
                         and self.noRedef == 0):
+                    redefinedWhileUnused = True
 
                     self.report(messages.RedefinedWhileUnused,
                                 lineno, value.name, scope[value.name].source.lineno)
+
+        if (not redefinedWhileUnused and
+            self.hasParent(value.source, _ast.ListComp)):
+            existing = self.scope.get(value.name)
+            if (existing and
+                not self.hasParent(existing.source, (_ast.For, _ast.ListComp))
+                and reportRedef and self.noRedef == 0):
+                self.report(messages.RedefinedInListComp, lineno, value.name,
+                            self.scope[value.name].source.lineno)
 
         if isinstance(value, UnBinding):
             try:
