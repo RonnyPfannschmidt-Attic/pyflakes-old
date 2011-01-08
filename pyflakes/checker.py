@@ -451,7 +451,7 @@ class Checker(object):
 
     def BINOP(self, node):
         if isinstance(node.op, _ast.Mod) and isinstance(node.left, _ast.Str):
-            dictfmt = '%(' in node.left.s
+            dictfmt = ('%(' in node.left.s and '%%(' not in node.left.s)
             nplaces = 0
             for m in interpol.finditer(node.left.s):
                 if m.group()[-1] != '%':
