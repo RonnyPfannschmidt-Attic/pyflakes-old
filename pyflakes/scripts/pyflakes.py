@@ -15,7 +15,8 @@ CouldNotCompile = __import__('pyflakes.messages', {}, {}, ['CouldNotCompile']).C
 
 def check(codeString, filename, exclude=()):
     try:
-        tree = compile(codeString.rstrip(), filename, 'exec', _ast.PyCF_ONLY_AST)
+        # HACK: ensure we're not stripping the last newline as comments will cause a compilation error
+        tree = compile(codeString.rstrip() + '\n', filename, 'exec', _ast.PyCF_ONLY_AST)
     except (SyntaxError, IndentationError):
         messages = []
         value = sys.exc_info()[1]
