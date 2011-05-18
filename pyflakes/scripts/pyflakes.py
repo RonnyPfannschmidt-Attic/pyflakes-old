@@ -14,22 +14,42 @@ checker = __import__('pyflakes.checker').checker
 CouldNotCompile = __import__('pyflakes.messages', {}, {}, ['CouldNotCompile']).CouldNotCompile
 
 def check(codeString, filename, exclude=()):
-    try:
-        # HACK: ensure we're not stripping the last newline as comments will cause a compilation error
-        tree = compile(codeString.rstrip() + '\n', filename, 'exec', _ast.PyCF_ONLY_AST)
-    except (SyntaxError, IndentationError):
-        messages = []
-        value = sys.exc_info()[1]
-        try:
-            (lineno, offset, line) = value[1][1:]
-        except IndexError:
-            messages = [CouldNotCompile(filename)]
-        else:
-            if line.endswith("\n"):
-                line = line[:-1]
+    """
+    Check the Python source given by C{codeString} for flakes.
 
-            messages = [CouldNotCompile(filename, lineno, offset, line)]
+    @param codeString: The Python source to check.
+    @type codeString: C{str}
+
+    @param filename: The name of the file the source came from, used to report
+        errors.
+    @type filename: C{str}
+
+    @return: The number of warnings emitted.
+    @rtype: C{int}
+    """
+    # First, compile into an AST and handle syntax errors.
+    try:
+        tree = compile(codeString, filename, "exec", _ast.PyCF_ONLY_AST)
+    except (SyntaxError, IndentationError), value:
+        msg = value.args[0]
+
+        (lineno, offset, text) = value.lineno, value.offset, value.text
+
+        # If there's an encoding problem with the file, the text is None.
+        if text is None:
+            # Avoid using msg, since for the only known case, it contains a
+            # bogus message that claims the encoding the file declared was
+            # unknown.
+            messages = [CouldNotCompile(filename, value)]
+        else:
+            line = text.splitlines()[-1]
+
+            if offset is not None:
+                offset = offset - (len(text) - len(line))
+
+            messages = [CouldNotCompile(filename, value, msg, line)]
     else:
+        # Okay, it's syntactically valid.  Now check it.
         w = checker.Checker(tree, filename)
         messages = w.messages
 
@@ -48,10 +68,11 @@ def checkPath(filename, exclude=()):
 
     @return: the number of warnings printed
     """
-    if os.path.exists(filename):
+    # TODO: this should return messages like check would above for files not found
+    try:
         return check(file(filename, 'U').read() + '\n', filename, exclude)
-    else:
-        print >> sys.stderr, '%s: no such file' % (filename,)
+    except IOError, msg:
+        print >> sys.stderr, "%s: %s" % (filename, msg.args[1])
         raise SystemExit
 
 def main():

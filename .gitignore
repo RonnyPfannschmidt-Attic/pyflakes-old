@@ -1,6 +1,6 @@
 *.pyc
 .svn
-_trial_temp/
 /pyflakes.egg-info/
 /build
 /dist
+_trial_temp*
