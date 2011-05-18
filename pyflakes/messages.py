@@ -75,3 +75,9 @@ class LateFutureImport(Message):
 
     def __init__(self, filename, lineno, col, names):
         Message.__init__(self, filename, lineno, message_args=(names,))
+
+class CouldNotCompile(Message):
+    message = 'could not compile: %s'
+    
+    def __init__(self, filename, lineno=None, col=None, line=None):
+        Message.__init__(self, filename, lineno, col, 'E', message_args=(line,))

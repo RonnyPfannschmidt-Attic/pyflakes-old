@@ -11,30 +11,34 @@ import optparse
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 checker = __import__('pyflakes.checker').checker
+CouldNotCompile = __import__('pyflakes.messages', {}, {}, ['CouldNotCompile']).CouldNotCompile
 
 def check(codeString, filename, exclude=()):
     try:
         tree = compile(codeString.rstrip(), filename, 'exec', _ast.PyCF_ONLY_AST)
     except (SyntaxError, IndentationError):
+        messages = []
         value = sys.exc_info()[1]
         try:
             (lineno, offset, line) = value[1][1:]
         except IndexError:
-            print >> sys.stderr, 'could not compile %r' % (filename,)
-            raise SystemExit
-        if line.endswith("\n"):
-            line = line[:-1]
-        print >> sys.stderr, '%s:%d: could not compile' % (filename, lineno)
-        print >> sys.stderr, line
-        print >> sys.stderr, " " * (offset-2), "^"
-        raise SystemExit
+            messages = [CouldNotCompile(filename)]
+        else:
+            if line.endswith("\n"):
+                line = line[:-1]
+
+            messages = [CouldNotCompile(filename, lineno, offset, line)]
     else:
         w = checker.Checker(tree, filename)
-        w.messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
-        for warning in w.messages:
-            if warning.level not in exclude:
-                print warning
-        return w.messages
+        messages = w.messages
+
+    messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
+
+    for message in messages:
+        if message.level not in exclude:
+            print message
+
+    return messages
 
 
 def checkPath(filename, exclude=()):

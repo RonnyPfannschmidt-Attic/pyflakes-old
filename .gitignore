@@ -3,3 +3,4 @@
 _trial_temp/
 /pyflakes.egg-info/
 /build
+/dist
