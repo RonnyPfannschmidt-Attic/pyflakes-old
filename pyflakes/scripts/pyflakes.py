@@ -9,7 +9,7 @@ import _ast
 
 checker = __import__('pyflakes.checker').checker
 
-def check(codeString, filename):
+def check(codeString, filename, stderr=sys.stderr):
     """
     Check the Python source given by C{codeString} for flakes.
 
@@ -39,22 +39,25 @@ def check(codeString, filename):
         (lineno, offset, text) = value.lineno, value.offset, value.text
 
         # If there's an encoding problem with the file, the text is None.
-        if text is None:
+        if (text is None and
+            'keyword' not in msg and
+            'non-default' not in msg):
+
             # Avoid using msg, since for the only known case, it contains a
             # bogus message that claims the encoding the file declared was
             # unknown.
-            print >> sys.stderr, "%s: problem decoding source" % (filename, )
+            print >> stderr, "%s: problem decoding source" % (filename, )
         else:
-            line = text.splitlines()[-1]
+            line = codeString.splitlines()[lineno-1].rstrip()
 
             if offset is not None:
                 offset = offset - (len(text) - len(line))
 
-            print >> sys.stderr, '%s:%d: %s' % (filename, lineno, msg)
-            print >> sys.stderr, line
+            print >> stderr, '%s:%d: %s' % (filename, lineno, msg)
+            print >> stderr, line
 
             if offset is not None:
-                print >> sys.stderr, " " * offset, "^"
+                print >> stderr, " " * offset, "^"
 
         return 1
     else:
@@ -66,17 +69,18 @@ def check(codeString, filename):
         return len(w.messages)
 
 
-def checkPath(filename):
+def checkPath(filename, stderr=None):
     """
     Check the given path, printing out any warnings detected.
 
     @return: the number of warnings printed
     """
     try:
-        return check(file(filename, 'U').read() + '\n', filename)
+        content = open(filename, 'U').read() + '\n'
     except IOError, msg:
-        print >> sys.stderr, "%s: %s" % (filename, msg.args[1])
+        print >> stderr, "%s: %s" % (filename, msg.args[1])
         return 1
+    return check(content, filename, stderr=stderr)
 
 
 def main():

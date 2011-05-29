@@ -2,7 +2,7 @@
 import textwrap
 import _ast
 
-from twisted.trial import unittest
+import unittest
 
 from pyflakes import checker
 

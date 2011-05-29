@@ -1,7 +1,7 @@
 
 from _ast import PyCF_ONLY_AST
 
-from twisted.trial.unittest import TestCase
+from unittest import TestCase
 
 from pyflakes import messages as m, checker
 from pyflakes.test import harness
