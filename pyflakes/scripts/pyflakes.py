@@ -28,12 +28,14 @@ def check(codeString, filename, stderr=sys.stderr):
         try:
             tree = compile(codeString, filename, "exec", _ast.PyCF_ONLY_AST)
             lnooffset = 0
-        except SyntaxError:
+        # the weird position of value is necessary cause
+        # the hack masks original exception texts
+        except SyntaxError, value:
             # HACK: try again with print function
             tree = compile('from __future__ import print_function\n' +
                            codeString, filename, "exec", _ast.PyCF_ONLY_AST)
             lnooffset = 1
-    except SyntaxError, value:
+    except SyntaxError:
         msg = value.args[0]
 
         (lineno, offset, text) = value.lineno, value.offset, value.text
