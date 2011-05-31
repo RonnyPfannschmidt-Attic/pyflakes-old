@@ -160,6 +160,10 @@ class FunctionScope(Scope):
         super(FunctionScope, self).__init__()
         self.globals = {}
 
+class ConditionScope(Scope):
+    #: set of the scope raises and may be discarded for promotion
+    raises = False
+
 
 
 class ModuleScope(Scope):
@@ -245,7 +249,9 @@ class Checker(object):
     scope = property(scope)
 
     def popScope(self):
-        self.dead_scopes.append(self.scopeStack.pop())
+        scope = self.scopeStack.pop()
+        self.dead_scopes.append(scope)
+        return scope
 
 
     def check_dead_scopes(self):
@@ -283,6 +289,9 @@ class Checker(object):
 
     def pushClassScope(self):
         self.scopeStack.append(ClassScope())
+
+    def pushConditionScope(self):
+        self.scopeStack.append(ConditionScope())
 
     def report(self, messageClass, *args, **kwargs):
         msg = messageClass(self.filename, *args, **kwargs)
@@ -323,7 +332,7 @@ class Checker(object):
         pass
 
     # "stmt" type nodes
-    DELETE = PRINT = WHILE = IF = WITH = RAISE = \
+    DELETE = PRINT = WHILE = WITH = \
         TRYFINALLY = ASSERT = EXEC = EXPR = handleChildren
 
     CONTINUE = BREAK = PASS = ignore
@@ -761,3 +770,34 @@ class Checker(object):
 
         for stmt in node.orelse:
             self.handleNode(stmt, node)
+
+    def RAISE(self, node):
+        self.scope.raises = True
+        self.handleChildren(node)
+
+
+    def IF(self, node):
+        self.handleNode(node.test, node)
+
+        self.pushConditionScope()
+        for stmt in node.body:
+            self.handleNode(stmt, node)
+        body_scope = self.popScope()
+
+        self.pushConditionScope()
+        for stmt in node.orelse:
+            self.handleNode(stmt, node)
+        else_scope = self.popScope()
+
+        if body_scope.raises and else_scope.raises:
+            pass
+        elif body_scope.raises:
+            self.scope.update(else_scope)
+        elif else_scope.raises:
+            self.scope.update(body_scope)
+        else:
+            #XXX: better scheme for unsure bindings
+            common = set(body_scope) & set(else_scope)
+            for key in common:
+                self.scope[key] = body_scope[key]
+
