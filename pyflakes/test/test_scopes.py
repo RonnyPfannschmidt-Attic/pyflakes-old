@@ -53,3 +53,35 @@ class ConditionalScopesTest(Test):
                     a = 1
             print(a)
         """)
+
+class TryExceptScopeTests(Test):
+    def test_simple_impotrt_error(self):
+        self.flakes("""
+            __all__ = ['json']
+            try:
+                import json
+            except ImportError:
+                import simplejson as json
+        """)
+
+
+    def test_etree_import_cascade(self):
+        self.flakes("""
+        __all__ = ['etree']
+        try:
+          from lxml import etree
+        except ImportError:
+          try:
+            import xml.etree.cElementTree as etree
+          except ImportError:
+            try:
+              import xml.etree.ElementTree as etree
+            except ImportError:
+              try:
+                import cElementTree as etree
+              except ImportError:
+                try:
+                  import elementtree.ElementTree as etree
+                except ImportError:
+                  raise ImportError('no elementree implementation found')
+        """)

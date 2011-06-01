@@ -200,7 +200,6 @@ class Checker(object):
         self.lnooffset = lnooffset
         self.scopeStack = [ModuleScope()]
         self.futuresAllowed = True
-        self.noRedef = 0
         self.handleChildren(tree)
         self._runDeferred(self._deferredFunctions)
         # Set _deferredFunctions to None so that deferFunction will fail
@@ -388,8 +387,7 @@ class Checker(object):
                 if (isinstance(existing, Importation)
                         and not existing.used
                         and (not isinstance(value, Importation) or value.fullName == existing.fullName)
-                        and reportRedef
-                        and self.noRedef == 0):
+                        and reportRedef):
                     redefinedWhileUnused = True
 
                     self.report(messages.RedefinedWhileUnused,
@@ -400,7 +398,7 @@ class Checker(object):
             existing = self.scope.get(value.name)
             if (existing and
                 not self.hasParent(existing.source, (_ast.For, _ast.ListComp))
-                and reportRedef and self.noRedef == 0):
+                and reportRedef):
                 self.report(messages.RedefinedInListComp, lineno, value.name,
                             self.scope[value.name].source.lineno)
 
@@ -751,32 +749,53 @@ class Checker(object):
         Handle C{try}-C{except}.  In particular, do not report redefinitions
         when occurring in an "except ImportError" block.
         """
+        self.pushConditionScope()
         for stmt in node.body:
             self.handleNode(stmt, node)
+        body_scope = self.popScope()
 
+        handler_scopes = [body_scope]
         for handler in node.handlers:
-            isImport = (handler.type and isinstance(handler.type, _ast.Name) and
-                        handler.type.id == 'ImportError')
-            if isImport:
-                self.noRedef += 1
             if handler.type:
                 self.handleNode(handler.type, node)
                 if handler.name:
                     self.handleNode(handler.name, node)
+            self.pushConditionScope()
             for stmt in handler.body:
                 self.handleNode(stmt, node)
-            if isImport:
-                self.noRedef -= 1
+            handler_scopes.append(self.popScope())
+
+        #XXX complicated logic, check
+        valid_scopes = [scope for scope in handler_scopes if not scope.raises]
+        if valid_scopes:
+            common = set(valid_scopes[0])
+            for scope in valid_scopes[1:]:
+                common.intersection_update(scope)
+            for name in common:
+                #XXX: really ok?
+                self.scope[name] = valid_scopes[0].pop(name)
+                for scope in valid_scopes[1:]:
+                    scope.pop(name)
+
 
         for stmt in node.orelse:
             self.handleNode(stmt, node)
 
     def RAISE(self, node):
+        """
+        mark a scope if a exception is raised in it
+        """
         self.scope.raises = True
         self.handleChildren(node)
 
 
     def IF(self, node):
+        """
+        handle if statements,
+        use subscopes, and reconcile them in the parent scope
+        special conditions for raising
+        """
+
         self.handleNode(node.test, node)
 
         self.pushConditionScope()
