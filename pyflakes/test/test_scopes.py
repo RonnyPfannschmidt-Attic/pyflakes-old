@@ -54,6 +54,13 @@ class ConditionalScopesTest(Test):
             print(a)
         """)
 
+
+    def test_execnet_channelexec_name_defines_channel(self):
+        self.flakes("""
+        if __name__ == '__channelexec__':
+            channel.send('works')
+        """)
+
 class TryExceptScopeTests(Test):
     def test_simple_impotrt_error(self):
         self.flakes("""
@@ -85,3 +92,4 @@ class TryExceptScopeTests(Test):
                 except ImportError:
                   raise ImportError('no elementree implementation found')
         """)
+

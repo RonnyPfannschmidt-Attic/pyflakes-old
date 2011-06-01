@@ -798,6 +798,17 @@ class Checker(object):
         """
 
         self.handleNode(node.test, node)
+        if isinstance(self.scope, ModuleScope) \
+           and isinstance(node.test, _ast.Compare) \
+           and len(node.test.ops) == 1 \
+           and isinstance(node.test.ops[0], _ast.Eq) \
+           and isinstance(node.test.left, _ast.Name) \
+           and node.test.left.id == '__name__' \
+           and isinstance(node.test.comparators[0], _ast.Str) \
+           and node.test.comparators[0].s == '__channelexec__':
+            #XXX: is that semantically valid?
+            self.addBinding(0, Binding('channel', node))
+
 
         self.pushConditionScope()
         for stmt in node.body:
