@@ -665,6 +665,8 @@ class Checker(object):
                 Check to see if any assignments have not been used.
                 """
                 for name, binding in self.scope.iteritems():
+                    if name == '__tracebackhide__':
+                        continue
                     if (not binding.used and not name in self.scope.globals
                         and isinstance(binding, Assignment)):
                         self.report(messages.UnusedVariable,

@@ -61,6 +61,12 @@ class ConditionalScopesTest(Test):
             channel.send('works')
         """)
 
+    def test_tracebackhide_needs_no_using_is_ok(self):
+        self.flakes("""
+            def helper():
+                __tracebackhide__ = True
+        """)
+
 class TryExceptScopeTests(Test):
     def test_simple_impotrt_error(self):
         self.flakes("""
