@@ -191,7 +191,7 @@ class Checker(object):
     nodeDepth = 0
     traceTree = False
 
-    def __init__(self, tree, filename='(none)', lnooffset=0):
+    def __init__(self, tree, filename='(none)', lnooffset=0, traceTree=False):
         self._deferredFunctions = []
         self._deferredAssignments = []
         self.dead_scopes = []
@@ -199,6 +199,7 @@ class Checker(object):
         self.filename = filename
         self.lnooffset = lnooffset
         self.scopeStack = [ModuleScope()]
+        self.traceTree = traceTree
         self.futuresAllowed = True
         self.handleChildren(tree)
         self._runDeferred(self._deferredFunctions)
