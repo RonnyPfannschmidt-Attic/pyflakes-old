@@ -161,8 +161,8 @@ class FunctionScope(Scope):
         self.globals = {}
 
 class ConditionScope(Scope):
-    #: set of the scope raises and may be discarded for promotion
-    raises = False
+    #: set of the scope leaves and may be discarded for promotion
+    escapes = False
 
     def __init__(self, parent):
         self.parent = parent
@@ -751,6 +751,7 @@ class Checker(object):
             self.addBinding(node.lineno, importation)
 
     def RETURN(self, node):
+        self.scope.escapes = True
         if not node.value:
             return
         self.handleNode(node.value, node)
@@ -786,7 +787,7 @@ class Checker(object):
             handler_scopes.append(self.popScope())
 
         #XXX complicated logic, check
-        valid_scopes = [scope for scope in handler_scopes if not scope.raises]
+        valid_scopes = [scope for scope in handler_scopes if not scope.escapes]
         if valid_scopes:
             common = set(valid_scopes[0])
             for scope in valid_scopes[1:]:
@@ -794,7 +795,7 @@ class Checker(object):
             # when the body scope doesnt raise,
             # its currently the best to consider its names
             # availiable for the orelse part
-            if not body_scope.raises:
+            if not body_scope.escapes:
                 common.update(body_scope)
 
             for name in common:
@@ -811,7 +812,7 @@ class Checker(object):
         """
         mark a scope if a exception is raised in it
         """
-        self.scope.raises = True
+        self.scope.escapes = True
         self.handleChildren(node)
 
 
@@ -845,11 +846,11 @@ class Checker(object):
             self.handleNode(stmt, node)
         else_scope = self.popScope()
 
-        if body_scope.raises and else_scope.raises:
+        if body_scope.escapes and else_scope.escapes:
             pass
-        elif body_scope.raises:
+        elif body_scope.escapes:
             self.scope.update(else_scope)
-        elif else_scope.raises:
+        elif else_scope.escapes:
             self.scope.update(body_scope)
         else:
             #XXX: better scheme for unsure bindings

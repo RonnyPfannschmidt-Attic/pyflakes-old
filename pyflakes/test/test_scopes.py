@@ -41,6 +41,23 @@ class ConditionalScopesTest(Test):
             print(a)
         """)
 
+    def test_return_in_else_will_propagate_body(self):
+        self.flakes("""
+            if True:
+                a = 1
+            else:
+                return ValueError
+            print(a)
+        """, m.ExceptionReturn)
+
+    def test_return_in_body_will_propagate_else(self):
+        self.flakes("""
+            if True:
+                return ValueError
+            else:
+                a = 1
+            print(a)
+        """, m.ExceptionReturn)
 
     def test_nested_propagation(self):
         self.flakes("""
