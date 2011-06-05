@@ -791,11 +791,17 @@ class Checker(object):
             common = set(valid_scopes[0])
             for scope in valid_scopes[1:]:
                 common.intersection_update(scope)
+            # when the body scope doesnt raise,
+            # its currently the best to consider its names
+            # availiable for the orelse part
+            if not body_scope.raises:
+                common.update(body_scope)
+
             for name in common:
                 #XXX: really ok?
                 self.scope[name] = valid_scopes[0].pop(name)
                 for scope in valid_scopes[1:]:
-                    scope.pop(name)
+                    scope.pop(name, None) # might not exist when body is ok
 
 
         for stmt in node.orelse:

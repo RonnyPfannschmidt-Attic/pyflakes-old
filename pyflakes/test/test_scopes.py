@@ -115,3 +115,12 @@ class TryExceptScopeTests(Test):
                   raise ImportError('no elementree implementation found')
         """)
 
+    def test_body_availiable_in_else(self):
+        self.flakes("""
+            try:
+                from lxml import etree
+            except ImportError:
+                print('missing')
+            else:
+                print(etree)
+            """)
