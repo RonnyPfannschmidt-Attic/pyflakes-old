@@ -51,21 +51,21 @@ class UndefinedName(Message):
     message = 'undefined name %r'
 
     def __init__(self, filename, loc, name):
-        Message.__init__(self, filename, loc, message_args=(name,))
+        Message.__init__(self, filename, loc, level='E', message_args=(name,))
         self.name = name
 
 class UndefinedExport(Message):
     message = 'undefined name %r in __all__'
 
     def __init__(self, filename, loc, name):
-        Message.__init__(self, filename, loc, message_args=(name,))
+        Message.__init__(self, filename, loc, level='E', message_args=(name,))
         self.name = name
 
 class UndefinedLocal(Message):
     message = "local variable %r (defined in enclosing scope on line %r) referenced before assignment"
 
     def __init__(self, filename, loc, name, orig_loc):
-        Message.__init__(self, filename, loc, message_args=(name, orig_loc.lineno))
+        Message.__init__(self, filename, loc, level='E', message_args=(name, orig_loc.lineno))
         self.name = name
         self.orig_loc = orig_loc
 
@@ -73,7 +73,7 @@ class DuplicateArgument(Message):
     message = 'duplicate argument %r in function definition'
 
     def __init__(self, filename, loc, name):
-        Message.__init__(self, filename, loc, message_args=(name,))
+        Message.__init__(self, filename, loc, level='E', message_args=(name,))
         self.name = name
 
 class RedefinedFunction(Message):
@@ -92,7 +92,7 @@ class CouldNotCompile(Message):
         else:
             self.message = 'could not compile'
             message_args = ()
-        Message.__init__(self, filename, loc, 'E', message_args=message_args)
+        Message.__init__(self, filename, loc, level='E', message_args=message_args)
         self.msg = msg
         self.line = line
 
