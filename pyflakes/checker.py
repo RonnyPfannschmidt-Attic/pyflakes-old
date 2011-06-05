@@ -164,6 +164,20 @@ class ConditionScope(Scope):
     #: set of the scope raises and may be discarded for promotion
     raises = False
 
+    def __init__(self, parent):
+        self.parent = parent
+
+    def __getitem__(self, key):
+
+        try:
+            return dict.__getitem__(self, key)
+        except KeyError:
+            return self.parent[key]
+
+    @property
+    def globals(self):
+        return self.parent.globals
+
 
 
 class ModuleScope(Scope):
@@ -291,7 +305,7 @@ class Checker(object):
         self.scopeStack.append(ClassScope())
 
     def pushConditionScope(self):
-        self.scopeStack.append(ConditionScope())
+        self.scopeStack.append(ConditionScope(self.scope))
 
     def report(self, messageClass, *args, **kwargs):
         msg = messageClass(self.filename, *args, **kwargs)
@@ -405,7 +419,10 @@ class Checker(object):
 
         if isinstance(value, UnBinding):
             try:
-                del self.scope[value.name]
+                self.scope[value.name]
+                if self.scope.pop(value.name, None) is None:
+                    #XXX: del in condition scope
+                    pass
             except KeyError:
                 self.report(messages.UndefinedName, lineno, value.name)
         else:

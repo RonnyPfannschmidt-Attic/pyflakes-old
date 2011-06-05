@@ -31,7 +31,7 @@ class ConditionalScopesTest(Test):
                 raise ValueError
             print(a)
         """)
-    
+
     def test_raise_in_body_will_propagate_else(self):
         self.flakes("""
             if True:
@@ -54,6 +54,22 @@ class ConditionalScopesTest(Test):
             print(a)
         """)
 
+
+    def test_nested_id_wont_mess(self):
+        self.flakes("""
+            if 1:
+                var = 1
+                if var:
+                    woo = var.fun
+            """)
+
+    def test_del_in_if(self):
+        #XXX:
+        self.flakes("""
+            var = 1
+            if var:
+                del var
+        """)
 
     def test_execnet_channelexec_name_defines_channel(self):
         self.flakes("""
