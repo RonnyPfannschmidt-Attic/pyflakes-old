@@ -94,6 +94,13 @@ class ConditionalScopesTest(Test):
             channel.send('works')
         """)
 
+    def test_execnet_channelexec_defines_channel_only_after_check(self):
+        self.flakes("""
+            channel
+            if __name__ == '__channelexec__':
+                channel.send('works')
+        """, m.UndefinedName)
+
     def test_tracebackhide_needs_no_using_is_ok(self):
         self.flakes("""
             def helper():
