@@ -828,6 +828,8 @@ class Checker(object):
         """
 
         self.handleNode(node.test, node)
+
+        # special case to handle modules with execnet channels
         if isinstance(self.scope, ModuleScope) \
            and isinstance(node.test, _ast.Compare) \
            and len(node.test.ops) == 1 \
