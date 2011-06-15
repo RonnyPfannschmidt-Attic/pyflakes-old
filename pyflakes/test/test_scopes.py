@@ -12,12 +12,23 @@ class ConditionalScopesTest(Test):
         print a
         """)
 
-    def test_uncommon_still_warns(self):
+    def test_unused_uncommon_gets_propagated(self):
+        self.flakes("""
+            if True:
+                a = 1
+                b = 2
+            else:
+                a = 2
+            print (a, b)
+        """)
+
+    def test_uncommon_but_used_in_scope_still_warns(self):
         #XXX: message sucks
         self.flakes("""
         if True:
             a = 1
             b = 2
+            b  # use it, so the unused propagation wont fire
         else:
             a = 2
         print (a, b)

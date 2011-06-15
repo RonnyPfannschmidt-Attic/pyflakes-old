@@ -264,6 +264,9 @@ class Checker(object):
 
     def popScope(self):
         scope = self.scopeStack.pop()
+        # dirty hack
+        if isinstance(scope, ConditionScope):
+            self.scopeStack.append(scope.parent)
         self.dead_scopes.append(scope)
         return scope
 
@@ -305,7 +308,8 @@ class Checker(object):
         self.scopeStack.append(ClassScope())
 
     def pushConditionScope(self):
-        self.scopeStack.append(ConditionScope(self.scope))
+        #XXX:hack
+        self.scopeStack[-1] = ConditionScope(self.scope)
 
     def report(self, messageClass, *args, **kwargs):
         msg = messageClass(self.filename, *args, **kwargs)
@@ -857,4 +861,16 @@ class Checker(object):
             common = set(body_scope) & set(else_scope)
             for key in common:
                 self.scope[key] = body_scope[key]
+
+            for key, binding in body_scope.items():
+                if key not in self.scope and not binding.used:
+                    #XXX: wrap it?
+                    self.scope[key] = binding
+
+            for key, binding in else_scope.items():
+                if key not in self.scope and not binding.used:
+                    #XXX: wrap it?
+                    self.scope[key] = binding
+
+
 
