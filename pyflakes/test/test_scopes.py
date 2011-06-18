@@ -159,3 +159,56 @@ class TryExceptScopeTests(Test):
             else:
                 print(etree)
             """)
+
+    def test_lotsa_local_scopes(self):
+        """code from mercurial that gave the condition code hickups"""
+        self.flakes("""
+        import os
+        short = _ = lambda x:x
+        import util
+        def makefilename(repo, pat, node,
+                         total=None, seqno=None,
+                         revwidth=None, pathname=None):
+            node_expander = {
+                'H': lambda: hex(node),
+                'R': lambda: str(repo.changelog.rev(node)),
+                'h': lambda: short(node),
+                }
+            expander = {
+                '%': lambda: '%',
+                'b': lambda: os.path.basename(repo.root),
+                }
+
+            try:
+                if node:
+                    expander.update(node_expander)
+                if node:
+                    expander['r'] = (lambda:
+                            str(repo.changelog.rev(node)).zfill(revwidth or 0))
+                if total is not None:
+                    expander['N'] = lambda: str(total)
+                if seqno is not None:
+                    expander['n'] = lambda: str(seqno)
+                if total is not None and seqno is not None:
+                    expander['n'] = lambda: str(seqno).zfill(len(str(total)))
+                if pathname is not None:
+                    expander['s'] = lambda: os.path.basename(pathname)
+                    expander['d'] = lambda: os.path.dirname(pathname) or '.'
+                    expander['p'] = lambda: pathname
+
+                newname = []
+                patlen = len(pat)
+                i = 0
+                while i < patlen:
+                    c = pat[i]
+                    if c == '%':
+                        i += 1
+                        c = pat[i]
+                        c = expander[c]()
+                    newname.append(c)
+                    i += 1
+                return ''.join(newname)
+            except KeyError, inst:
+                raise util.Abort(_("invalid format spec '%%%s' in output filename") %
+                                 inst.args[0])
+        """)

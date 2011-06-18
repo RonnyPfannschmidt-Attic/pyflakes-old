@@ -143,7 +143,8 @@ class Scope(dict):
     def __init__(self):
         super(Scope, self).__init__()
 
-
+    def of_type(self, type):
+        return isinstance(self, type)
 
 class ClassScope(Scope):
     pass
@@ -165,6 +166,7 @@ class ConditionScope(Scope):
     escapes = False
 
     def __init__(self, parent):
+        super(ConditionScope, self).__init__()
         self.parent = parent
 
     def __getitem__(self, key):
@@ -179,6 +181,8 @@ class ConditionScope(Scope):
         return self.parent.globals
 
 
+    def of_type(self, type):
+        return self.parent.of_type(type) or isinstance(self, type)
 
 class ModuleScope(Scope):
     pass
@@ -568,7 +572,7 @@ class Checker(object):
 
             for scope in self.scopeStack[-2:0:-1]:
                 importStarred = importStarred or scope.importStarred
-                if not isinstance(scope, FunctionScope):
+                if not scope.of_type(FunctionScope):
                     continue
                 try:
                     scope[node.id].used = (self.scope, node.lineno)
@@ -807,6 +811,13 @@ class Checker(object):
                 self.scope[name] = valid_scopes[0].pop(name)
                 for scope in valid_scopes[1:]:
                     scope.pop(name, None) # might not exist when body is ok
+
+        for scope in valid_scopes:
+            for key, binding in scope.items():
+                if key not in self.scope and not binding.used:
+                    # bubble up all unused variables
+                    # this should rather use the possible flowgraphs
+                    self.scope[key] = binding
 
 
         for stmt in node.orelse:
