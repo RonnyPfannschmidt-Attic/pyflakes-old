@@ -165,6 +165,7 @@ class ConditionScope(Scope):
     #: set of the scope leaves and may be discarded for promotion
     escapes = False
 
+    #XXX: maybe handle in the conditions
     def _get_import_starred(self):
         return self.parent.importStarred
 
