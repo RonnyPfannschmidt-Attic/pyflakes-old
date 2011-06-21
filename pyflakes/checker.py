@@ -165,6 +165,14 @@ class ConditionScope(Scope):
     #: set of the scope leaves and may be discarded for promotion
     escapes = False
 
+    def _get_import_starred(self):
+        return self.parent.importStarred
+
+    def _set_import_starred(self, value):
+        self.parent.importStarred = value
+
+    importStarred = property(_get_import_starred, _set_import_starred)
+
     def __init__(self, parent):
         super(ConditionScope, self).__init__()
         self.parent = parent

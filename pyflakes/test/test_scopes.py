@@ -12,6 +12,18 @@ class ConditionalScopesTest(Test):
         print a
         """)
 
+    def test_starimport_in_condition_scope(self):
+        self.flakes("""
+            if True:
+                from foo import *
+            else:
+                from bar import *
+            lala
+            """,
+            m.ImportStarUsed,
+            m.ImportStarUsed,
+        )
+
     def test_unused_uncommon_gets_propagated(self):
         self.flakes("""
             if True:
