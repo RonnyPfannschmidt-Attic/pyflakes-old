@@ -218,13 +218,12 @@ class Checker(object):
     nodeDepth = 0
     traceTree = False
 
-    def __init__(self, tree, filename='(none)', lnooffset=0, traceTree=False):
+    def __init__(self, tree, filename='(none)', traceTree=False):
         self._deferredFunctions = []
         self._deferredAssignments = []
         self.dead_scopes = []
         self.messages = []
         self.filename = filename
-        self.lnooffset = lnooffset
         self.scopeStack = [ModuleScope()]
         self.traceTree = traceTree
         self.futuresAllowed = True
@@ -326,7 +325,6 @@ class Checker(object):
 
     def report(self, messageClass, *args, **kwargs):
         msg = messageClass(self.filename, *args, **kwargs)
-        msg.lineno -= self.lnooffset
         self.messages.append(msg)
 
     def handleChildren(self, tree):

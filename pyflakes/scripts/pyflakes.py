@@ -64,9 +64,10 @@ def check(codeString, filename, stderr=sys.stderr):
         return 1
     else:
         # Okay, it's syntactically valid.  Now check it.
-        w = checker.Checker(tree, filename, lnooffset)
+        w = checker.Checker(tree, filename)
         w.messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
         for warning in w.messages:
+            warning.lineno -= lnooffset
             print warning
         return len(w.messages)
 
