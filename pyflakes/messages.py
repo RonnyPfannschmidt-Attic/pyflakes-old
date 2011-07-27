@@ -3,90 +3,72 @@
 class Message(object):
     message = ''
     message_args = ()
-    def __init__(self, filename, lineno):
+    names = ()
+
+    def __init__(self, filename, lineno, *message_args):
         self.filename = filename
         self.lineno = lineno
+        self.message_args = message_args
+
     def __str__(self):
         return '%s:%s: %s' % (self.filename, self.lineno, self.message % self.message_args)
 
 
 class UnusedImport(Message):
     message = '%r imported but unused'
-    def __init__(self, filename, lineno, name):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name,)
+    names = ('name',)
 
 
 class RedefinedWhileUnused(Message):
     message = 'redefinition of unused %r from line %r'
-    def __init__(self, filename, lineno, name, orig_lineno):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name, orig_lineno)
+    names = 'name', 'orig_lineno'
 
 
 class RedefinedInListComp(Message):
     message = 'list comprehension redefines %r from line %r'
-    def __init__(self, filename, lineno, name, orig_lineno):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name, orig_lineno)
+    names = 'name', 'orig_lineno'
 
 
 class ImportShadowedByLoopVar(Message):
     message = 'import %r from line %r shadowed by loop variable'
-    def __init__(self, filename, lineno, name, orig_lineno):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name, orig_lineno)
+    names = 'name', 'orig_lineno'
 
 
 class ImportStarUsed(Message):
     message = "'from %s import *' used; unable to detect undefined names"
-    def __init__(self, filename, lineno, modname):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (modname,)
+    names = ('modname',)
 
 
 class UndefinedName(Message):
     message = 'undefined name %r'
-    def __init__(self, filename, lineno, name):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name,)
+    names = ('name',)
 
 
 
 class UndefinedExport(Message):
     message = 'undefined name %r in __all__'
-    def __init__(self, filename, lineno, name):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name,)
+    names = ('name',)
 
 
 
 class UndefinedLocal(Message):
     message = "local variable %r (defined in enclosing scope on line %r) referenced before assignment"
-    def __init__(self, filename, lineno, name, orig_lineno):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name, orig_lineno)
+    names = 'name', 'orig_lineno'
 
 
 class DuplicateArgument(Message):
     message = 'duplicate argument %r in function definition'
-    def __init__(self, filename, lineno, name):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name,)
+    names = ('name',)
 
 
 class RedefinedFunction(Message):
     message = 'redefinition of function %r from line %r'
-    def __init__(self, filename, lineno, name, orig_lineno):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name, orig_lineno)
+    names = 'name', 'orig_lineno'
 
 
 class LateFutureImport(Message):
     message = 'future import(s) %r after other statements'
-    def __init__(self, filename, lineno, names):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (names,)
+    names = ('names',)
 
 
 class UnusedVariable(Message):
@@ -96,23 +78,17 @@ class UnusedVariable(Message):
     """
 
     message = 'local variable %r is assigned to but never used'
-    def __init__(self, filename, lineno, names):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (names,)
+    names = ('names',)
 
 
 class StringFormattingProblem(Message):
     message = 'string formatting arguments: should have %s, has %s'
-    def __init__(self, filename, lineno, nshould, nhave):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (nshould, nhave)
+    names = 'nshould', 'nhave'
 
 
 class StringFormatProblem(Message):
     message = 'string.format(): %s'
-    def __init__(self, filename, lineno, msg):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (msg,)
+    names = ('msg',)
 
 
 class ExceptionReturn(Message):
@@ -121,9 +97,7 @@ class ExceptionReturn(Message):
     """
 
     message = 'exception %r is returned'
-    def __init__(self, filename, lineno, name):
-        Message.__init__(self, filename, lineno)
-        self.message_args = (name,)
+    names = ('name',)
 
 
 class TupleCall(Message):
@@ -132,5 +106,3 @@ class TupleCall(Message):
     """
 
     message = 'calling tuple literal, forgot a comma?'
-    def __init__(self, filename, lineno):
-        Message.__init__(self, filename, lineno)
