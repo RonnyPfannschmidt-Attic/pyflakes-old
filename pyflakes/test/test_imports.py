@@ -452,8 +452,8 @@ class Test(harness.Test):
             import fu
         except ImportError:
             import bar as fu
+        fu
         ''')
-    test_tryingMultipleImports.todo = ''
 
     def test_nonGlobalDoesNotRedefine(self):
         self.flakes('''
