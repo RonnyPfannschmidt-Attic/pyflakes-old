@@ -101,7 +101,7 @@ class Assignment(Binding):
 
 
 class FunctionDefinition(Binding):
-    pass
+    is_property = False
 
 
 
@@ -407,7 +407,9 @@ class Checker(object):
           reported.
         '''
         if (isinstance(self.scope.get(value.name), FunctionDefinition)
-                    and isinstance(value, FunctionDefinition)):
+                    and isinstance(value, FunctionDefinition)
+                    and not self.scope.get(value.name).is_property
+                    and not value.is_property):
             self.report(messages.RedefinedFunction,
                         lineno, value.name, self.scope[value.name].source.lineno)
 
@@ -652,13 +654,22 @@ class Checker(object):
 
     def FUNCTIONDEF(self, node):
         # the decorators attribute is called decorator_list as of Python 2.6
+        is_property = False
         if hasattr(node, 'decorators'):
-            for deco in node.decorators:
-                self.handleNode(deco, node)
+            decorators = node.decorators
         else:
-            for deco in node.decorator_list:
-                self.handleNode(deco, node)
-        self.addBinding(node.lineno, FunctionDefinition(node.name, node))
+            decorators = node.decorator_list
+
+        for deco in decorators:
+            self.handleNode(deco, node)
+            if getattr(deco, 'id', None) == 'property':
+                is_property = True
+            if getattr(deco, 'attr', None) in ('setter', 'deleter'):
+                is_property = True
+
+        funcdef = FunctionDefinition(node.name, node)
+        funcdef.is_property = is_property
+        self.addBinding(node.lineno, funcdef)
         self.LAMBDA(node)
 
     def LAMBDA(self, node):

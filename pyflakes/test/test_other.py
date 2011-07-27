@@ -99,6 +99,20 @@ class Test(harness.Test):
             a = classmethod(a)
         ''')
 
+    def test_modern_property(self):
+        self.flakes("""
+        class A:
+            @property
+            def t(self):
+                pass
+            @t.setter
+            def t(self, value):
+                pass
+            @t.deleter
+            def t(self):
+                pass
+        """)
+
     def test_unaryPlus(self):
         '''Don't die on unary +'''
         self.flakes('+1')
