@@ -486,10 +486,10 @@ class Test(harness.Test):
         self.flakes('''
         try:
             import fu
+            fu
         except ImportError:
             pass
         ''')
-    test_importingForImportError.todo = ''
 
     def test_importedInClass(self):
         '''Imports in class scope can be used through self'''
