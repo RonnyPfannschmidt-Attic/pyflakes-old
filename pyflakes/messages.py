@@ -5,9 +5,10 @@ class Message(object):
     message_args = ()
     names = ()
 
-    def __init__(self, filename, lineno, *message_args):
+    def __init__(self, filename, source_node, *message_args):
         self.filename = filename
-        self.lineno = lineno
+        self.lineno = source_node.lineno
+        self.col_offset = getattr(source_node, 'col_offset', None)
         self.message_args = message_args
 
     def __str__(self):

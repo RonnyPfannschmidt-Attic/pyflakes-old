@@ -224,3 +224,23 @@ class TryExceptScopeTests(Test):
                 raise util.Abort(_("invalid format spec '%%%s' in output filename") %
                                  inst.args[0])
         """)
+
+
+        def test_unused_import(self):
+            self.flakes("""
+            def fun():
+                if 1:
+                    try:
+                        import ast
+                    except:
+                        a=1
+            def pytest_configure(config):
+                mode = config.getvalue("assertmode")
+                if config.getvalue("noassert") or config.getvalue("nomagic"):
+                    mode = "plain"
+                if mode == "rewrite":
+                    try:
+                        import ast
+                    except ImportError:
+                        mode = "reinterp"
+            """)

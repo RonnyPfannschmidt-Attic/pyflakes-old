@@ -299,7 +299,7 @@ class Checker(object):
                     for name in undefined:
                         self.report(
                             messages.UndefinedExport,
-                            scope['__all__'].source.lineno,
+                            scope['__all__'].source,
                             name)
             else:
                 all = []
@@ -310,7 +310,7 @@ class Checker(object):
                     if not importation.used and importation.name not in all:
                         self.report(
                             messages.UnusedImport,
-                            importation.source.lineno,
+                            importation.source,
                             importation.name)
 
 
@@ -397,7 +397,7 @@ class Checker(object):
                 return True
             parent = getattr(parent, 'parent', None)
 
-    def addBinding(self, lineno, value, reportRedef=True):
+    def addBinding(self, node, value, reportRedef=True):
         '''Called when a binding is altered.
 
         - `lineno` is the line of the statement responsible for the change
@@ -411,7 +411,7 @@ class Checker(object):
                     and not self.scope.get(value.name).is_property
                     and not value.is_property):
             self.report(messages.RedefinedFunction,
-                        lineno, value.name, self.scope[value.name].source.lineno)
+                        node, value.name, self.scope[value.name].source.lineno)
 
         redefinedWhileUnused = False
 
@@ -425,7 +425,7 @@ class Checker(object):
                     redefinedWhileUnused = True
 
                     self.report(messages.RedefinedWhileUnused,
-                                lineno, value.name, scope[value.name].source.lineno)
+                                node, value.name, scope[value.name].source.lineno)
 
         if (not redefinedWhileUnused and
             self.hasParent(value.source, _ast.ListComp)):
@@ -433,7 +433,7 @@ class Checker(object):
             if (existing and
                 not self.hasParent(existing.source, (_ast.For, _ast.ListComp))
                 and reportRedef):
-                self.report(messages.RedefinedInListComp, lineno, value.name,
+                self.report(messages.RedefinedInListComp, node, value.name,
                             self.scope[value.name].source.lineno)
 
         if isinstance(value, UnBinding):
@@ -443,7 +443,7 @@ class Checker(object):
                     #XXX: del in condition scope
                     pass
             except KeyError:
-                self.report(messages.UndefinedName, lineno, value.name)
+                self.report(messages.UndefinedName, node, value.name)
         else:
             self.scope[value.name] = value
 
@@ -489,7 +489,7 @@ class Checker(object):
                     # unused ones will get an unused import warning
                     and self.scope[varn].used):
                 self.report(messages.ImportShadowedByLoopVar,
-                            node.lineno, varn, self.scope[varn].source.lineno)
+                            node, varn, self.scope[varn].source.lineno)
 
         self.handleChildren(node)
 
@@ -503,17 +503,17 @@ class Checker(object):
             if isinstance(node.right, _ast.Dict):
                 if not dictfmt:
                     self.report(messages.StringFormattingProblem,
-                                node.lineno, 'tuple', 'dict')
+                                node, 'tuple', 'dict')
             else:
                 if isinstance(node.right, _ast.Tuple):
                     if dictfmt:
                         self.report(messages.StringFormattingProblem,
-                                    node.lineno, 'dict', 'tuple')
+                                    node, 'dict', 'tuple')
                     else:
                         nobjects = len(node.right.elts)
                         if nobjects != nplaces:
                             self.report(messages.StringFormattingProblem,
-                                        node.lineno, nplaces, nobjects)
+                                        node, nplaces, nobjects)
             self.handleNode(node.right, node)
         else:
             self.handleNode(node.left, node)
@@ -521,7 +521,7 @@ class Checker(object):
 
     def CALL(self, node):
         if isinstance(node.func, _ast.Tuple):
-            self.report(messages.TupleCall, node.lineno)
+            self.report(messages.TupleCall, node)
         self.handleChildren(node)
 
     def ATTRIBUTE(self, node):
@@ -543,7 +543,7 @@ class Checker(object):
                         kwds.add(fn)
             except ValueError, err:
                 self.report(messages.StringFormatProblem,
-                            node.lineno, str(err))
+                            node, str(err))
             else:
                 callnode = node.parent
                 # can only really check if no *args or **kwds are used
@@ -551,15 +551,15 @@ class Checker(object):
                     nargs = len(node.parent.args)
                     kwdset = set(kwd.arg for kwd in node.parent.keywords)
                     if nargs < num:
-                        self.report(messages.StringFormatProblem, node.lineno,
+                        self.report(messages.StringFormatProblem, node,
                                     'not enough positional args (need %s)' % num)
                     elif nargs < maxnum+1:
-                        self.report(messages.StringFormatProblem, node.lineno,
+                        self.report(messages.StringFormatProblem, node,
                                     'not enough positional args (need %s)' %
                                     (maxnum+1))
                     missing = kwds - kwdset
                     if missing:
-                        self.report(messages.StringFormatProblem, node.lineno,
+                        self.report(messages.StringFormatProblem, node,
                                     'keyword args missing: %s' % ', '.join(missing))
         else:
             self.handleNode(node.value, node)
@@ -573,7 +573,7 @@ class Checker(object):
             # try local scope
             importStarred = self.scope.importStarred
             try:
-                self.scope[node.id].used = (self.scope, node.lineno)
+                self.scope[node.id].used = (self.scope, node)
             except KeyError:
                 pass
             else:
@@ -586,7 +586,7 @@ class Checker(object):
                 if not scope.of_type(FunctionScope):
                     continue
                 try:
-                    scope[node.id].used = (self.scope, node.lineno)
+                    scope[node.id].used = (self.scope, node)
                 except KeyError:
                     pass
                 else:
@@ -596,7 +596,7 @@ class Checker(object):
 
             importStarred = importStarred or self.scopeStack[0].importStarred
             try:
-                self.scopeStack[0][node.id].used = (self.scope, node.lineno)
+                self.scopeStack[0][node.id].used = (self.scope, node)
             except KeyError:
                 if ((not hasattr(__builtin__, node.id))
                         and node.id not in _MAGIC_GLOBALS
@@ -606,7 +606,7 @@ class Checker(object):
                         # the special name __path__ is valid only in packages
                         pass
                     else:
-                        self.report(messages.UndefinedName, node.lineno, node.id)
+                        self.report(messages.UndefinedName, node, node.id)
         elif isinstance(node.ctx, (_ast.Store, _ast.AugStore)):
             # if the name hasn't already been defined in the current scope
             if isinstance(self.scope, FunctionScope) and node.id not in self.scope:
@@ -638,13 +638,13 @@ class Checker(object):
                 binding = Assignment(node.id, node)
             if node.id in self.scope:
                 binding.used = self.scope[node.id].used
-            self.addBinding(node.lineno, binding)
+            self.addBinding(node, binding)
         elif isinstance(node.ctx, _ast.Del):
             if isinstance(self.scope, FunctionScope) and \
                    node.id in self.scope.globals:
                 del self.scope.globals[node.id]
             else:
-                self.addBinding(node.lineno, UnBinding(node.id, node))
+                self.addBinding(node, UnBinding(node.id, node))
         else:
             # must be a Param context -- this only happens for names in function
             # arguments, but these aren't dispatched through here
@@ -669,7 +669,7 @@ class Checker(object):
 
         funcdef = FunctionDefinition(node.name, node)
         funcdef.is_property = is_property
-        self.addBinding(node.lineno, funcdef)
+        self.addBinding(node, funcdef)
         self.LAMBDA(node)
 
     def LAMBDA(self, node):
@@ -685,8 +685,7 @@ class Checker(object):
                         addArgs(arg.elts)
                     else:
                         if arg.id in args:
-                            self.report(messages.DuplicateArgument,
-                                        node.lineno, arg.id)
+                            self.report(messages.DuplicateArgument, node, arg.id)
                         args.append(arg.id)
 
             self.pushFunctionScope()
@@ -697,7 +696,7 @@ class Checker(object):
             if node.args.kwarg:
                 args.append(node.args.kwarg)
             for name in args:
-                self.addBinding(node.lineno, Argument(name, node), reportRedef=False)
+                self.addBinding(node, Argument(name, node), reportRedef=False)
             if isinstance(node.body, list):
                 # case for FunctionDefs
                 for stmt in node.body:
@@ -715,7 +714,7 @@ class Checker(object):
                     if (not binding.used and not name in self.scope.globals
                         and isinstance(binding, Assignment)):
                         self.report(messages.UnusedVariable,
-                                    binding.source.lineno, name)
+                                    binding.source, name)
             self.deferAssignment(checkUnusedAssignments)
             self.popScope()
 
@@ -737,7 +736,7 @@ class Checker(object):
         for stmt in node.body:
             self.handleNode(stmt, node)
         self.popScope()
-        self.addBinding(node.lineno, Binding(node.name, node))
+        self.addBinding(node, Binding(node.name, node))
 
     def ASSIGN(self, node):
         self.handleNode(node.value, node)
@@ -757,12 +756,12 @@ class Checker(object):
         for alias in node.names:
             name = alias.asname or alias.name
             importation = Importation(name, node)
-            self.addBinding(node.lineno, importation)
+            self.addBinding(node, importation)
 
     def IMPORTFROM(self, node):
         if node.module == '__future__':
             if not self.futuresAllowed:
-                self.report(messages.LateFutureImport, node.lineno,
+                self.report(messages.LateFutureImport, node,
                             [n.name for n in node.names])
         else:
             self.futuresAllowed = False
@@ -770,13 +769,13 @@ class Checker(object):
         for alias in node.names:
             if alias.name == '*':
                 self.scope.importStarred = True
-                self.report(messages.ImportStarUsed, node.lineno, node.module)
+                self.report(messages.ImportStarUsed, node, node.module)
                 continue
             name = alias.asname or alias.name
             importation = Importation(name, node)
             if node.module == '__future__':
-                importation.used = (self.scope, node.lineno)
-            self.addBinding(node.lineno, importation)
+                importation.used = (self.scope, node)
+            self.addBinding(node, importation)
 
     def RETURN(self, node):
         self.scope.escapes = True
@@ -791,7 +790,7 @@ class Checker(object):
         else:
             return
         if name.endswith('Error') or name.endswith('Exception'):
-            self.report(messages.ExceptionReturn, node.lineno, name)
+            self.report(messages.ExceptionReturn, node, name)
 
     def TRYEXCEPT(self, node):
         """
@@ -870,7 +869,7 @@ class Checker(object):
            and isinstance(node.test.comparators[0], _ast.Str) \
            and node.test.comparators[0].s == '__channelexec__':
             #XXX: is that semantically valid?
-            self.addBinding(0, Binding('channel', node))
+            self.addBinding(node, Binding('channel', node))
 
 
         self.pushConditionScope()
