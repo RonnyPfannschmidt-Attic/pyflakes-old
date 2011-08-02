@@ -55,10 +55,6 @@ def check(codeString, filename, exclude=()):
 
     messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
 
-    for message in messages:
-        if message.level not in exclude:
-            print message
-
     return messages
 
 
@@ -99,7 +95,7 @@ def main():
     parser.add_option('-X', '--exclude-files', action='append', dest='exclude_files', help='exclude files', default=[])
 
     (options, args) = parser.parse_args()
-    warnings = []
+    messages = []
     if args:
         for arg in args:
             if os.path.isdir(arg):
@@ -108,11 +104,15 @@ def main():
                 for dirpath, dirnames, filenames in os.walk(arg):
                     traverse_path(warnings, dirpath, dirnames, filenames)
             else:
-                warnings += checkPath(arg, options.exclude)
+                messages += checkPath(arg, options.exclude)
     else:
-        warnings += check(sys.stdin.read(), '<stdin>')
+        messages += check(sys.stdin.read(), '<stdin>')
 
-    raise SystemExit(sum(1 for w in warnings if w.level == 'E') > 0)
+    for message in messages:
+        if message.level not in exclude:
+            print message
+
+    raise SystemExit(sum(1 for w in messages if w.level == 'E') > 0)
 
 if __name__ == '__main__':
     main()
