@@ -9,7 +9,7 @@ except ImportError:
 setup(
     name="pyflakes",
     license="MIT",
-    version="0.4.0",
+    version="0.4.1",
     description="passive checker of Python programs",
     author="Phil Frost",
     maintainer="Moe Aboulkheir",
