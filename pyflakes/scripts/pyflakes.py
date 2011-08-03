@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)
 checker = __import__('pyflakes.checker').checker
 CouldNotCompile = __import__('pyflakes.messages', {}, {}, ['CouldNotCompile']).CouldNotCompile
 
-def check(codeString, filename, exclude=()):
+def check(codeString, filename):
     """
     Check the Python source given by C{codeString} for flakes.
 
@@ -58,7 +58,7 @@ def check(codeString, filename, exclude=()):
     return messages
 
 
-def checkPath(filename, exclude=()):
+def checkPath(filename):
     """
     Check the given path, printing out any warnings detected.
 
@@ -66,7 +66,7 @@ def checkPath(filename, exclude=()):
     """
     # TODO: this should return messages like check would above for files not found
     try:
-        return check(file(filename, 'U').read() + '\n', filename, exclude)
+        return check(file(filename, 'U').read() + '\n', filename)
     except IOError, msg:
         print >> sys.stderr, "%s: %s" % (filename, msg.args[1])
         raise SystemExit
@@ -102,14 +102,14 @@ def main():
                 if arg == '.':
                     arg = './'
                 for dirpath, dirnames, filenames in os.walk(arg):
-                    traverse_path(warnings, dirpath, dirnames, filenames)
+                    traverse_path(messages, dirpath, dirnames, filenames)
             else:
-                messages += checkPath(arg, options.exclude)
+                messages += checkPath(arg)
     else:
         messages += check(sys.stdin.read(), '<stdin>')
 
     for message in messages:
-        if message.level not in exclude:
+        if message.level not in options.exclude:
             print message
 
     raise SystemExit(sum(1 for w in messages if w.level == 'E') > 0)
