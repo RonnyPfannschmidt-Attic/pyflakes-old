@@ -88,7 +88,7 @@ def main():
                 if path.startswith(p):
                     return
             if filename.endswith('.py'):
-                warnings += checkPath(path, options.exclude)
+                warnings += checkPath(path)
     
     parser = optparse.OptionParser(usage='usage: %prog [options] module')
     parser.add_option('-x', '--exclude', action='append', dest='exclude', help='exclude levels', default=[])
