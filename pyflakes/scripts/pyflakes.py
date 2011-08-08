@@ -108,11 +108,12 @@ def main():
     else:
         messages += check(sys.stdin.read(), '<stdin>')
 
+
     for message in messages:
         if message.level not in options.exclude:
             print message
 
-    raise SystemExit(sum(1 for w in messages if w.level == 'E') > 0)
+    raise SystemExit(sum(1 for w in messages if w.level not in options.exclude) > 0)
 
 if __name__ == '__main__':
     main()
