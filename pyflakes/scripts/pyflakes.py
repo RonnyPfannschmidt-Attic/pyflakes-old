@@ -109,11 +109,23 @@ def main():
         messages += check(sys.stdin.read(), '<stdin>')
 
 
+    sums = {}
     for message in messages:
         if message.level not in options.exclude:
+            if message.level not in sums:
+                sums[message.level] = 1
+            else:
+                sums[message.level] += 1
             print message
 
-    raise SystemExit(sum(1 for w in messages if w.level not in options.exclude) > 0)
+
+    failed = bool(sums.get('E'))
+    sums = sorted(sums.items())
+
+    print
+    print '%s! %s' % (failed and 'Failed' or 'Done', ', '.join('%s=%s' % (k, v) for k, v in sums))
+
+    raise SystemExit(failed)
 
 if __name__ == '__main__':
     main()
