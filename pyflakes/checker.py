@@ -193,6 +193,7 @@ class ConditionScope(Scope):
     def of_type(self, type):
         return self.parent.of_type(type) or isinstance(self, type)
 
+
 class ModuleScope(Scope):
     pass
 
@@ -624,6 +625,8 @@ class Checker(object):
                                     scope[node.id].used[1],
                                     node.id,
                                     scope[node.id].source.lineno)
+                                    # kevins fork used the source info instead of lineno here,
+                                    # however the message ctor did just revert that
                         break
 
             if isinstance(node.parent,
@@ -708,6 +711,7 @@ class Checker(object):
                 """
                 for name, binding in self.scope.iteritems():
                     if name == '__tracebackhide__':
+                        # used to hide frames in pytest
                         continue
                     if (not binding.used and not name in self.scope.globals
                         and isinstance(binding, Assignment)):

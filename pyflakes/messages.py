@@ -3,12 +3,16 @@
 class Message(object):
     message = ''
     message_args = ()
+    use_column = True
     names = ()
 
     def __init__(self, filename, source_node, *message_args):
         self.filename = filename
         self.lineno = source_node.lineno
-        self.col_offset = getattr(source_node, 'col_offset', None)
+        if self.use_column:
+            self.col = getattr(source_node, 'col_offset', None)
+        else:
+            self.col = None
         self.message_args = message_args
 
     def __str__(self):
@@ -18,6 +22,7 @@ class Message(object):
 class UnusedImport(Message):
     message = '%r imported but unused'
     names = ('name',)
+    use_column = False
 
 
 class RedefinedWhileUnused(Message):
@@ -45,11 +50,9 @@ class UndefinedName(Message):
     names = ('name',)
 
 
-
 class UndefinedExport(Message):
     message = 'undefined name %r in __all__'
     names = ('name',)
-
 
 
 class UndefinedLocal(Message):

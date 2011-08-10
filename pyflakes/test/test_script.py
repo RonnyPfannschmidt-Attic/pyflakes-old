@@ -16,7 +16,6 @@ class CheckTests(TestCase):
     Tests for L{check} and L{checkPath} which check a file for flakes.
     """
 
-    
     def test_missingTrailingNewline(self):
         """
         Source which doesn't end with a newline shouldn't cause any
