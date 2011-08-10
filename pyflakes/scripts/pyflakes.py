@@ -120,10 +120,10 @@ def main():
 
 
     failed = bool(sums.get('E'))
-    sums = sorted(sums.items())
 
-    print
-    print '%s! %s' % (failed and 'Failed' or 'Done', ', '.join('%s=%s' % (k, v) for k, v in sums))
+    if sums:
+        print
+        print '%s! %s' % (failed and 'Failed' or 'Done', ', '.join('%s=%s' % (k, v) for k, v in sorted(sums.iteritems())))
 
     raise SystemExit(failed)
 
