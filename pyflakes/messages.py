@@ -5,6 +5,7 @@ class Message(object):
     message_args = ()
     use_column = True
     names = ()
+    level = 'N'
 
     def __init__(self, filename, source_node, *message_args):
         self.filename = filename
@@ -16,66 +17,109 @@ class Message(object):
         self.message_args = message_args
 
     def __str__(self):
-        return '%s:%s: %s' % (self.filename, self.lineno, self.message % self.message_args)
+        if self.col is not None:
+            return '%s:%s(%d): [%s] %s' % (self.filename, self.lineno, self.col, self.level, self.message % self.message_args)
+        elif self.lineno:
+            return '%s:%s: [%s] %s' % (self.filename, self.lineno, self.level, self.message % self.message_args)
+        else:
+            return '%s: [%s] %s' % (self.filename, self.level, self.message % self.message_args)
 
+class Warning(Message):
+    level = 'W'
 
-class UnusedImport(Message):
+class Error(Message):
+    level = 'E'
+
+class UnusedImport(Warning):
     message = '%r imported but unused'
     names = ('name',)
     use_column = False
 
 
-class RedefinedWhileUnused(Message):
+class RedefinedWhileUnused(Warning):
     message = 'redefinition of unused %r from line %r'
     names = 'name', 'orig_lineno'
 
 
-class RedefinedInListComp(Message):
+class RedefinedInListComp(Warning):
     message = 'list comprehension redefines %r from line %r'
     names = 'name', 'orig_lineno'
 
 
-class ImportShadowedByLoopVar(Message):
+class ImportShadowedByLoopVar(Warning):
     message = 'import %r from line %r shadowed by loop variable'
     names = 'name', 'orig_lineno'
 
 
-class ImportStarUsed(Message):
+class ImportStarUsed(Warning):
     message = "'from %s import *' used; unable to detect undefined names"
     names = ('modname',)
 
 
-class UndefinedName(Message):
+class UndefinedName(Error):
     message = 'undefined name %r'
     names = ('name',)
 
 
-class UndefinedExport(Message):
+class UndefinedExport(Error):
     message = 'undefined name %r in __all__'
     names = ('name',)
 
 
-class UndefinedLocal(Message):
+class UndefinedExport(Error):
+    message = 'undefined name %r in __all__'
+    names = ('name',)
+    
+
+class UndefinedLocal(Error):
     message = "local variable %r (defined in enclosing scope on line %r) referenced before assignment"
     names = 'name', 'orig_lineno'
 
 
-class DuplicateArgument(Message):
+class DuplicateArgument(Error):
     message = 'duplicate argument %r in function definition'
     names = ('name',)
 
 
-class RedefinedFunction(Message):
+class RedefinedFunction(Warning):
     message = 'redefinition of function %r from line %r'
     names = 'name', 'orig_lineno'
 
 
-class LateFutureImport(Message):
+class CouldNotCompile(Error):
+    def __init__(self, filename, loc, msg=None, line=None):
+        if not line:
+            loc.lineno = None
+        if msg and line:
+            self.message = 'could not compile: %s\n%s'
+            message_args = (msg, line)
+        else:
+            self.message = 'could not compile: %s'
+            message_args = (msg,)
+        Error.__init__(self, filename, loc, *message_args)
+        self.loc = loc
+        self.msg = msg
+        self.line = line
+
+    def __str__(self):
+        default = Error.__str__(self)
+        if isinstance(self.loc, SyntaxError):
+            fname, line, pos, data = self.loc.args[1]
+            if data:
+                if '\n' not in data[:-1]:
+                    # weird single line error, like unexpected eof
+                    spaces = pos
+                else:
+                    spaces = pos - data.rfind('\n', 0, pos) -1
+                return default + '\n%*.s' %(spaces, '') + '^'
+        return default
+
+class LateFutureImport(Warning):
     message = 'future import(s) %r after other statements'
     names = ('names',)
 
 
-class UnusedVariable(Message):
+class UnusedVariable(Warning):
     """
     Indicates that a variable has been explicity assigned to but not actually
     used.
@@ -85,17 +129,17 @@ class UnusedVariable(Message):
     names = ('names',)
 
 
-class StringFormattingProblem(Message):
+class StringFormattingProblem(Warning):
     message = 'string formatting arguments: should have %s, has %s'
     names = 'nshould', 'nhave'
 
 
-class StringFormatProblem(Message):
+class StringFormatProblem(Warning):
     message = 'string.format(): %s'
     names = ('msg',)
 
 
-class ExceptionReturn(Message):
+class ExceptionReturn(Warning):
     """
     Indicates that an Error or Exception is returned instead of raised.
     """
@@ -104,9 +148,10 @@ class ExceptionReturn(Message):
     names = ('name',)
 
 
-class TupleCall(Message):
+class TupleCall(Warning):
     """
-    Indicates that an Error or Exception is returned instead of raised.
+    Indicates that a tuple is called (usually a forgotton collon in a list of tuples)
     """
 
     message = 'calling tuple literal, forgot a comma?'
+    names = ('name',)

@@ -3,11 +3,15 @@
 Implementation of the command-line I{pyflakes} tool.
 """
 
+import _ast
 import sys
 import os
-import _ast
+import optparse
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 checker = __import__('pyflakes.checker').checker
+CouldNotCompile = __import__('pyflakes.messages', {}, {}, ['CouldNotCompile']).CouldNotCompile
 
 def check(codeString, filename, stderr=sys.stderr):
     """
@@ -48,28 +52,21 @@ def check(codeString, filename, stderr=sys.stderr):
             # Avoid using msg, since for the only known case, it contains a
             # bogus message that claims the encoding the file declared was
             # unknown.
-            print >> stderr, "%s: problem decoding source" % (filename, )
+            return [CouldNotCompile(filename, value, "problem decoding source", 0)]
         else:
             line = codeString.splitlines()[lineno-1].rstrip()
 
             if offset is not None:
                 offset = offset - (len(text) - len(line))
-
-            print >> stderr, '%s:%d: %s' % (filename, lineno, msg)
-            print >> stderr, line
-
-            if offset is not None:
-                print >> stderr, " " * offset, "^"
-
-        return 1
+            #XXX: include offset?!
+            return [CouldNotCompile(filename, value, msg, line)]
     else:
         # Okay, it's syntactically valid.  Now check it.
         w = checker.Checker(tree, filename)
         w.messages.sort(lambda a, b: cmp(a.lineno, b.lineno))
         for warning in w.messages:
             warning.lineno -= lnooffset
-            print warning
-        return len(w.messages)
+        return w.messages
 
 
 def checkPath(filename, stderr=None):
@@ -81,24 +78,66 @@ def checkPath(filename, stderr=None):
     try:
         content = open(filename, 'U').read() + '\n'
     except IOError, msg:
-        print >> stderr, "%s: %s" % (filename, msg.args[1])
-        return 1
+        return [CouldNotCompile(filename, msg, msg.args[1], '')]
     return check(content, filename, stderr=stderr)
 
 
+def walk_pyfiles_of(arg, exclude_files):
+    for dirpath, dirnames, filenames in os.walk(arg):
+        dirpath = os.path.normpath(dirpath)
+
+        # Exclusions
+        # XXX: this seems like a weird fuzzy hack
+        def excluded(name):
+            for p in exclude_files:
+                if name.startswith(p):
+                    return True
+
+        if excluded(dirpath):
+            continue
+
+        for filename in sorted(filenames):
+            path = os.path.join(dirpath, filename)
+            if not excluded(path) and filename.endswith('.py'):
+                yield path
+
 def main():
-    warnings = 0
-    args = sys.argv[1:]
+    parser = optparse.OptionParser(usage='usage: %prog [options] module')
+    parser.add_option('-x', '--exclude', action='append', dest='exclude', help='exclude levels', default=[])
+    parser.add_option('-X', '--exclude-files', action='append', dest='exclude_files', help='exclude files', default=[])
+
+    (options, args) = parser.parse_args()
+    messages = []
     if args:
         for arg in args:
             if os.path.isdir(arg):
-                for dirpath, dirnames, filenames in os.walk(arg):
-                    for filename in sorted(filenames):
-                        if filename.endswith('.py'):
-                            warnings += checkPath(os.path.join(dirpath, filename))
+                if arg == '.':
+                    arg = './'
+                    for pyfile in walk_pyfiles_of(arg, options.exclude_files):
+                        messages.extend(checkPath(pyfile))
             else:
-                warnings += checkPath(arg)
+                messages.extend(checkPath(arg))
     else:
-        warnings += check(sys.stdin.read(), '<stdin>')
+        messages += check(sys.stdin.read(), '<stdin>')
 
-    raise SystemExit(warnings > 0)
+
+    sums = {}
+    for message in messages:
+        if message.level not in options.exclude:
+            if message.level not in sums:
+                sums[message.level] = 1
+            else:
+                sums[message.level] += 1
+            print message
+
+
+    failed = 'E' in sums
+
+    if sums:
+        print
+        print '%s! %s' % (failed and 'Failed' or 'Done', ', '.join('%s=%s' % (k, v) for k, v in sorted(sums.iteritems())))
+
+    raise SystemExit(failed)
+
+if __name__ == '__main__':
+    main()

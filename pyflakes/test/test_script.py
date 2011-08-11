@@ -36,11 +36,11 @@ class CheckTests(TestCase):
             def mock_open(*k):
                 raise IOError(None, 'No such file or directory')
             pyflakes.open = mock_open
-            count = checkPath('extremo', stderr=err)
+            errors = checkPath('extremo', stderr=err)
         finally:
             del pyflakes.open
-        self.assertEquals(err.getvalue(), 'extremo: No such file or directory\n')
-        self.assertEquals(count, 1)
+        assert str(errors[0]) == 'extremo: [E] could not compile: No such file or directory'
+        assert len(errors) == 1
 
 
     def test_multilineSyntaxError(self):
@@ -69,17 +69,13 @@ def baz():
         else:
             self.fail('uhm where is our syntax error')
 
-        err = StringIO()
-        count = check(source, 'dummy.py', stderr=err)
-        self.assertEqual(count, 1)
+        errors = check(source, 'dummy.py')
+        self.assertEqual(len(errors), 1)
 
-        self.assertEqual(
-            err.getvalue(),
-            """\
-dummy.py:8: invalid syntax
+        assert str(errors[0]) == """\
+dummy.py:8: [E] could not compile: invalid syntax
     '''quux'''
-           ^
-""")
+           ^"""
 
 
     def test_eofSyntaxError(self):
@@ -89,15 +85,13 @@ dummy.py:8: invalid syntax
         """
         source = "def foo("
         err = StringIO()
-        count = check(source, 'dummy.py', stderr=err)
-        self.assertEqual(count, 1)
-        self.assertEqual(
-            err.getvalue(),
-            """\
-dummy.py:1: unexpected EOF while parsing
+        errors = check(source, 'dummy.py', stderr=err)
+        self.assertEqual(len(errors), 1)
+        assert str(errors[0]) == """\
+dummy.py:1: [E] could not compile: unexpected EOF while parsing
 def foo(
-         ^
-""")
+         ^\
+"""
 
 
     def test_nonDefaultFollowsDefaultSyntaxError(self):
@@ -111,14 +105,11 @@ def foo(bar=baz, bax):
     pass
 """
         err = StringIO()
-        count = check(source, 'dummy.py', stderr=err)
-        self.assertEqual(count, 1)
-        self.assertEqual(
-            err.getvalue(),
-            """\
-dummy.py:1: non-default argument follows default argument
-def foo(bar=baz, bax):
-""")
+        errors = check(source, 'dummy.py', stderr=err)
+        self.assertEqual(len(errors), 1)
+        assert str(errors[0]) == """\
+dummy.py:1: [E] could not compile: non-default argument follows default argument
+def foo(bar=baz, bax):"""
 
 
     def test_nonKeywordAfterKeywordSyntaxError(self):
@@ -131,14 +122,11 @@ def foo(bar=baz, bax):
 foo(bar=baz, bax)
 """
         err = StringIO()
-        count = check(source, 'dummy.py', stderr=err)
-        self.assertEqual(count, 1)
-        self.assertEqual(
-            err.getvalue(),
-            """\
-dummy.py:1: non-keyword arg after keyword arg
-foo(bar=baz, bax)
-""")
+        errors = check(source, 'dummy.py', stderr=err)
+        self.assertEqual(len(errors), 1)
+        assert str(errors[0]) == """\
+dummy.py:1: [E] could not compile: non-keyword arg after keyword arg
+foo(bar=baz, bax)"""
 
 
     def test_permissionDenied(self):
@@ -151,13 +139,13 @@ foo(bar=baz, bax)
             def mock_open(*k):
                 raise IOError(None, 'Permission denied')
             pyflakes.open = mock_open
-            count = checkPath('dummy.py', stderr=err)
+            errors = checkPath('dummy.py', stderr=err)
         finally:
             del pyflakes.open
 
-        self.assertEquals(count, 1)
-        self.assertEquals(
-            err.getvalue(), "dummy.py: Permission denied\n")
+        self.assertEquals(len(errors), 1)
+        assert errors[0].filename == 'dummy.py'
+        assert errors[0].message_args[0] == 'Permission denied'
 
 
     def test_misencodedFile(self):
@@ -170,7 +158,6 @@ foo(bar=baz, bax)
 x = "\N{SNOWMAN}"
 """.encode('utf-8')
         err = StringIO()
-        count = check(source, 'dummy.py', stderr=err)
-        self.assertEquals(count, 1)
-        self.assertEquals(
-            err.getvalue(), "dummy.py: problem decoding source\n")
+        errors = check(source, 'dummy.py', stderr=err)
+        self.assertEquals(len(errors), 1)
+        assert str(errors[0]) == "dummy.py: [E] could not compile: problem decoding source"
