@@ -31,12 +31,11 @@ class CheckTests(TestCase):
         """
         L{checkPath} handles non-existing files.
         """
-        err = StringIO()
         try:
             def mock_open(*k):
                 raise IOError(None, 'No such file or directory')
             script.open = mock_open
-            errors = checkPath('extremo', stderr=err)
+            errors = checkPath('extremo')
         finally:
             del script.open
         assert str(errors[0]) == 'extremo: [E] could not compile: No such file or directory'
@@ -84,8 +83,7 @@ dummy.py:8: [E] could not compile: invalid syntax
         syntax error reflects the cause for the syntax error.
         """
         source = "def foo("
-        err = StringIO()
-        errors = check(source, 'dummy.py', stderr=err)
+        errors = check(source, 'dummy.py')
         self.assertEqual(len(errors), 1)
         assert str(errors[0]) == """\
 dummy.py:1: [E] could not compile: unexpected EOF while parsing
@@ -105,7 +103,7 @@ def foo(bar=baz, bax):
     pass
 """
         err = StringIO()
-        errors = check(source, 'dummy.py', stderr=err)
+        errors = check(source, 'dummy.py')
         self.assertEqual(len(errors), 1)
         assert str(errors[0]) == """\
 dummy.py:1: [E] could not compile: non-default argument follows default argument
@@ -121,8 +119,7 @@ def foo(bar=baz, bax):"""
         source = """\
 foo(bar=baz, bax)
 """
-        err = StringIO()
-        errors = check(source, 'dummy.py', stderr=err)
+        errors = check(source, 'dummy.py')
         self.assertEqual(len(errors), 1)
         assert str(errors[0]) == """\
 dummy.py:1: [E] could not compile: non-keyword arg after keyword arg
@@ -134,12 +131,11 @@ foo(bar=baz, bax)"""
         If the a source file is not readable, this is reported on standard
         error.
         """
-        err = StringIO()
         try:
             def mock_open(*k):
                 raise IOError(None, 'Permission denied')
             script.open = mock_open
-            errors = checkPath('dummy.py', stderr=err)
+            errors = checkPath('dummy.py')
         finally:
             del script.open
 
@@ -157,7 +153,6 @@ foo(bar=baz, bax)"""
 # coding: ascii
 x = "\N{SNOWMAN}"
 """.encode('utf-8')
-        err = StringIO()
-        errors = check(source, 'dummy.py', stderr=err)
+        errors = check(source, 'dummy.py')
         self.assertEquals(len(errors), 1)
         assert str(errors[0]) == "dummy.py: [E] could not compile: problem decoding source"

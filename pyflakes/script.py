@@ -11,7 +11,7 @@ import optparse
 from pyflakes import checker
 from pyflakes.messages import CouldNotCompile
 
-def check(codeString, filename, stderr=sys.stderr):
+def check(codeString, filename):
     """
     Check the Python source given by C{codeString} for flakes.
 
@@ -67,7 +67,7 @@ def check(codeString, filename, stderr=sys.stderr):
         return w.messages
 
 
-def checkPath(filename, stderr=None):
+def checkPath(filename):
     """
     Check the given path, printing out any warnings detected.
 
@@ -77,7 +77,7 @@ def checkPath(filename, stderr=None):
         content = open(filename, 'U').read() + '\n'
     except IOError, msg:
         return [CouldNotCompile(filename, msg, msg.args[1], '')]
-    return check(content, filename, stderr=stderr)
+    return check(content, filename)
 
 
 def walk_pyfiles_of(arg, exclude_files):
