@@ -7,8 +7,8 @@ import sys
 from StringIO import StringIO
 
 from unittest import TestCase
-from pyflakes.scripts.pyflakes import check, checkPath
-from pyflakes.scripts import pyflakes
+from pyflakes.script import check, checkPath
+from pyflakes import script
 
 
 class CheckTests(TestCase):
@@ -35,10 +35,10 @@ class CheckTests(TestCase):
         try:
             def mock_open(*k):
                 raise IOError(None, 'No such file or directory')
-            pyflakes.open = mock_open
+            script.open = mock_open
             errors = checkPath('extremo', stderr=err)
         finally:
-            del pyflakes.open
+            del script.open
         assert str(errors[0]) == 'extremo: [E] could not compile: No such file or directory'
         assert len(errors) == 1
 
@@ -138,10 +138,10 @@ foo(bar=baz, bax)"""
         try:
             def mock_open(*k):
                 raise IOError(None, 'Permission denied')
-            pyflakes.open = mock_open
+            script.open = mock_open
             errors = checkPath('dummy.py', stderr=err)
         finally:
-            del pyflakes.open
+            del script.open
 
         self.assertEquals(len(errors), 1)
         assert errors[0].filename == 'dummy.py'

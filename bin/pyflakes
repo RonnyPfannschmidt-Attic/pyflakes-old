@@ -1,4 +1,4 @@
 #!/usr/bin/python
 
-from pyflakes.scripts.pyflakes import main
+from pyflakes.script import main
 main()

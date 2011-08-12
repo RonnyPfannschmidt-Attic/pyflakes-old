@@ -8,10 +8,8 @@ import sys
 import os
 import optparse
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-
-checker = __import__('pyflakes.checker').checker
-CouldNotCompile = __import__('pyflakes.messages', {}, {}, ['CouldNotCompile']).CouldNotCompile
+from pyflakes import checker
+from pyflakes.messages import CouldNotCompile
 
 def check(codeString, filename, stderr=sys.stderr):
     """
