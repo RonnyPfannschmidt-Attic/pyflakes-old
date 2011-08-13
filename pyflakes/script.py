@@ -111,8 +111,8 @@ def main():
             if os.path.isdir(arg):
                 if arg == '.':
                     arg = './'
-                    for pyfile in walk_pyfiles_of(arg, options.exclude_files):
-                        messages.extend(checkPath(pyfile))
+                for pyfile in walk_pyfiles_of(arg, options.exclude_files):
+                    messages.extend(checkPath(pyfile))
             else:
                 messages.extend(checkPath(arg))
     else:
