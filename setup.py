@@ -15,7 +15,7 @@ setup(
     maintainer="Moe Aboulkheir",
     maintainer_email="moe@divmod.com",
     url="http://www.divmod.org/trac/wiki/DivmodPyflakes",
-    packages=["pyflakes", "pyflakes.scripts", "pyflakes.test"],
+    packages=["pyflakes", "pyflakes.test"],
     scripts=["bin/pyflakes"],
     long_description="""Pyflakes is program to analyze Python programs and detect various errors. It
 works by parsing the source file, not importing it, so it is safe to use on
