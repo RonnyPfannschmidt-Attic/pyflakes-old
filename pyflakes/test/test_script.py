@@ -10,6 +10,10 @@ from unittest import TestCase
 from pyflakes.script import check, checkPath
 from pyflakes import script
 
+def assert_a_error(errors, error_str):
+    assert len(errors) == 1
+    assert str(errors[0]) == error_str
+
 
 class CheckTests(TestCase):
     """
@@ -25,7 +29,7 @@ class CheckTests(TestCase):
         if sys.version < '2.7':
             return #XXX syntax error on older python
         content = "def foo():\n\tpass\n\t"
-        self.assertFalse(check(content, 'dummy.py'))
+        assert not check(content, 'dummy.py')
 
     def test_checkPathNonExisting(self):
         """
@@ -38,8 +42,7 @@ class CheckTests(TestCase):
             errors = checkPath('extremo')
         finally:
             del script.open
-        assert str(errors[0]) == 'extremo: [E] could not compile: No such file or directory'
-        assert len(errors) == 1
+        assert_a_error(errors, 'extremo: [E] could not compile: No such file or directory')
 
 
     def test_multilineSyntaxError(self):
@@ -69,12 +72,12 @@ def baz():
             self.fail('uhm where is our syntax error')
 
         errors = check(source, 'dummy.py')
-        self.assertEqual(len(errors), 1)
 
-        assert str(errors[0]) == """\
+        assert_a_error(errors, """\
 dummy.py:8: [E] could not compile: invalid syntax
     '''quux'''
-           ^"""
+           ^\
+""")
 
 
     def test_eofSyntaxError(self):
@@ -84,12 +87,11 @@ dummy.py:8: [E] could not compile: invalid syntax
         """
         source = "def foo("
         errors = check(source, 'dummy.py')
-        self.assertEqual(len(errors), 1)
-        assert str(errors[0]) == """\
+        assert_a_error(errors, """\
 dummy.py:1: [E] could not compile: unexpected EOF while parsing
 def foo(
          ^\
-"""
+""")
 
 
     def test_nonDefaultFollowsDefaultSyntaxError(self):
@@ -102,12 +104,10 @@ def foo(
 def foo(bar=baz, bax):
     pass
 """
-        err = StringIO()
         errors = check(source, 'dummy.py')
-        self.assertEqual(len(errors), 1)
-        assert str(errors[0]) == """\
+        assert_a_error(errors, """\
 dummy.py:1: [E] could not compile: non-default argument follows default argument
-def foo(bar=baz, bax):"""
+def foo(bar=baz, bax):""")
 
 
     def test_nonKeywordAfterKeywordSyntaxError(self):
@@ -120,10 +120,9 @@ def foo(bar=baz, bax):"""
 foo(bar=baz, bax)
 """
         errors = check(source, 'dummy.py')
-        self.assertEqual(len(errors), 1)
-        assert str(errors[0]) == """\
+        assert_a_error(errors, """\
 dummy.py:1: [E] could not compile: non-keyword arg after keyword arg
-foo(bar=baz, bax)"""
+foo(bar=baz, bax)""")
 
 
     def test_permissionDenied(self):
