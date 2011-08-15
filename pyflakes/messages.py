@@ -108,7 +108,9 @@ class CouldNotCompile(Error):
             if data:
                 if '\n' not in data[:-1]:
                     # weird single line error, like unexpected eof
-                    spaces = pos
+                    # the bool subtraction is to account for python2.7
+                    # adding a \n even if there is none in the source
+                    spaces = pos - (data[-1] == '\n') 
                 else:
                     spaces = pos - data.rfind('\n', 0, pos) -1
                 return default + '\n%*.s' %(spaces, '') + '^'

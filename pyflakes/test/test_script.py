@@ -90,7 +90,7 @@ dummy.py:8: [E] could not compile: invalid syntax
         assert_a_error(errors, """\
 dummy.py:1: [E] could not compile: unexpected EOF while parsing
 def foo(
-         ^\
+        ^\
 """)
 
 
