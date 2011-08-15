@@ -9,7 +9,8 @@ import os
 import optparse
 
 from pyflakes import checker
-from pyflakes.messages import CouldNotCompile
+from pyflakes.messages import CouldNotCompile, CouldNotLoad
+
 
 def check(codeString, filename):
     """
@@ -76,7 +77,7 @@ def checkPath(filename):
     try:
         content = open(filename, 'U').read() + '\n'
     except IOError, msg:
-        return [CouldNotCompile(filename, msg, msg.args[1], '')]
+        return [CouldNotLoad(filename, msg)]
     return check(content, filename)
 
 

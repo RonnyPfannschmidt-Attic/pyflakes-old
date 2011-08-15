@@ -42,7 +42,7 @@ class CheckTests(TestCase):
             errors = checkPath('extremo')
         finally:
             del script.open
-        assert_a_error(errors, 'extremo: [E] could not compile: No such file or directory')
+        assert_a_error(errors, 'extremo: [E] Could not load: No such file or directory')
 
 
     def test_multilineSyntaxError(self):

@@ -102,19 +102,26 @@ class CouldNotCompile(Error):
         self.line = line
 
     def __str__(self):
-        default = Error.__str__(self)
-        if isinstance(self.loc, SyntaxError):
-            fname, line, pos, data = self.loc.args[1]
-            if data:
-                if '\n' not in data[:-1]:
-                    # weird single line error, like unexpected eof
-                    # the bool subtraction is to account for python2.7
-                    # adding a \n even if there is none in the source
-                    spaces = pos - (data[-1] == '\n') 
-                else:
-                    spaces = pos - data.rfind('\n', 0, pos) -1
-                return default + '\n%*.s' %(spaces, '') + '^'
-        return default
+        err = Error.__str__(self)
+        fname, line, pos, data = self.loc.args[1]
+        if data:
+            if '\n' not in data[:-1]:
+                # weird single line error, like unexpected eof
+                # the bool subtraction is to account for python2.7
+                # adding a \n even if there is none in the source
+                spaces = pos - (data[-1] == '\n') 
+            else:
+                spaces = pos - data.rfind('\n', 0, pos) -1
+            return err + '\n%*.s' %(spaces, '') + '^'
+        return err
+
+class CouldNotLoad(Error):
+    message = 'Could not load: %s'
+
+    def __init__(self, filename, exc):
+        exc.lineno = None
+        Error.__init__(self, filename, exc, exc.args[1])
+
 
 class LateFutureImport(Warning):
     message = 'future import(s) %r after other statements'
