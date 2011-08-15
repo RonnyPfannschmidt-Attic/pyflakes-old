@@ -16,15 +16,14 @@ def check(codeString, filename):
     """
     Check the Python source given by C{codeString} for flakes.
 
-    @param codeString: The Python source to check.
-    @type codeString: C{str}
+    :param codeString: The Python source to check.
+    :type codeString: str
 
-    @param filename: The name of the file the source came from, used to report
+    :param filename: The name of the file the source came from, used to report
         errors.
-    @type filename: C{str}
+    :type filename: str
 
-    @return: The number of warnings emitted.
-    @rtype: C{int}
+    :returns: list warnings emmited
     """
     # First, compile into an AST and handle syntax errors.
     try:
@@ -72,7 +71,7 @@ def checkPath(filename):
     """
     Check the given path, printing out any warnings detected.
 
-    @return: the number of warnings printed
+    :returns: list of warnings printed
     """
     try:
         content = open(filename, 'U').read() + '\n'
@@ -100,41 +99,60 @@ def walk_pyfiles_of(arg, exclude_files):
             if not excluded(path) and filename.endswith('.py'):
                 yield path
 
+
+def present_messages(messages, summary, exclude):
+    for message in messages:
+        if message.level not in exclude:
+            summary[message.level] = summary.get(message.level, 0) + 1
+            print message
+
+
+
 def main():
     parser = optparse.OptionParser(usage='usage: %prog [options] module')
-    parser.add_option('-x', '--exclude', action='append', dest='exclude', help='exclude levels', default=[])
-    parser.add_option('-X', '--exclude-files', action='append', dest='exclude_files', help='exclude files', default=[])
+    parser.add_option('-x', '--exclude',
+                      action='append',
+                      dest='exclude',
+                      help='exclude levels',
+                      default=[])
+    parser.add_option('-X', '--exclude-files',
+                      action='append',
+                      dest='exclude_files',
+                      help='exclude files',
+                      default=[])
+    parser.add_option('-W', '--fatal_warnings',
+                      action='store_true',
+                      help='fail on warnings')
 
     (options, args) = parser.parse_args()
-    messages = []
+    summary = {}
     if args:
         for arg in args:
             if os.path.isdir(arg):
                 if arg == '.':
                     arg = './'
                 for pyfile in walk_pyfiles_of(arg, options.exclude_files):
-                    messages.extend(checkPath(pyfile))
+                    messages = checkPath(pyfile)
+                    present_messages(messages, summary, options.exclude)
             else:
-                messages.extend(checkPath(arg))
+                messages = checkPath(pyfile)
+                present_messages(messages, summary, options.exclude)
     else:
-        messages += check(sys.stdin.read(), '<stdin>')
+        messages = check(sys.stdin.read(), '<stdin>')
+        present_messages(messages, summary, options.exclude)
 
 
-    sums = {}
-    for message in messages:
-        if message.level not in options.exclude:
-            if message.level not in sums:
-                sums[message.level] = 1
-            else:
-                sums[message.level] += 1
-            print message
 
+    if options.fatal_warnings:
+        failed = bool(summary)
+    else:
+        failed = 'E' in summary
 
-    failed = 'E' in sums
-
-    if sums:
+    if summary:
         print
-        print '%s! %s' % (failed and 'Failed' or 'Done', ', '.join('%s=%s' % (k, v) for k, v in sorted(sums.iteritems())))
+        print '%s! %s' % (
+            failed and 'Failed' or 'Done',
+            ', '.join('%s=%s' % (k, v) for k, v in sorted(summary.items())))
 
     raise SystemExit(failed)
 
