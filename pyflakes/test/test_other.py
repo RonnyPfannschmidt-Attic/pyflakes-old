@@ -4,51 +4,51 @@
 """
 Tests for various Pyflakes behavior.
 """
-
+import pytest
 from sys import version_info
 
 from pyflakes import messages as m
-from pyflakes.test import harness
+from pyflakes.test.harness import flakes
 
 
-class Test(harness.Test):
+class Test:
 
     def test_duplicateArgs(self):
-        self.flakes('def fu(bar, bar): pass', m.DuplicateArgument)
+        flakes('def fu(bar, bar): pass', m.DuplicateArgument)
 
+    @pytest.mark.xfail(reason='this requires finding all assignments in the function body first')
     def test_localReferencedBeforeAssignment(self):
-        self.flakes('''
+        flakes('''
         a = 1
         def f():
             a; a=1
         f()
         ''', m.UndefinedName)
-    test_localReferencedBeforeAssignment.todo = 'this requires finding all assignments in the function body first'
 
     def test_redefinedInListComp(self):
         """
         Test that shadowing a variable in a list comprehension raises
         a warning.
         """
-        self.flakes('''
+        flakes('''
         a = 1
         [1 for a, b in [(1, 2)]]
         ''', m.RedefinedInListComp)
-        self.flakes('''
+        flakes('''
         class A:
             a = 1
             [1 for a, b in [(1, 2)]]
         ''', m.RedefinedInListComp)
-        self.flakes('''
+        flakes('''
         def f():
             a = 1
             [1 for a, b in [(1, 2)]]
         ''', m.RedefinedInListComp)
-        self.flakes('''
+        flakes('''
         [1 for a, b in [(1, 2)]]
         [1 for a, b in [(1, 2)]]
         ''')
-        self.flakes('''
+        flakes('''
         for a, b in [(1, 2)]:
             pass
         [1 for a, b in [(1, 2)]]
@@ -60,7 +60,7 @@ class Test(harness.Test):
         Test that shadowing a function definition with another one raises a
         warning.
         """
-        self.flakes('''
+        flakes('''
         def a(): pass
         def a(): pass
         ''', m.RedefinedFunction)
@@ -70,7 +70,7 @@ class Test(harness.Test):
         Test that shadowing a function definition in a class suite with another
         one raises a warning.
         """
-        self.flakes('''
+        flakes('''
         class A:
             def a(): pass
             def a(): pass
@@ -81,7 +81,7 @@ class Test(harness.Test):
         Test that shadowing a function definition with a decorated version of
         that function does not raise a warning.
         """
-        self.flakes('''
+        flakes('''
         from somewhere import somedecorator
 
         def a(): pass
@@ -93,14 +93,14 @@ class Test(harness.Test):
         Test that shadowing a function definition in a class suite with a
         decorated version of that function does not raise a warning.
         """
-        self.flakes('''
+        flakes('''
         class A:
             def a(): pass
             a = classmethod(a)
         ''')
 
     def test_modern_property(self):
-        self.flakes("""
+        flakes("""
         class A:
             @property
             def t(self):
@@ -115,7 +115,7 @@ class Test(harness.Test):
 
     def test_unaryPlus(self):
         '''Don't die on unary +'''
-        self.flakes('+1')
+        flakes('+1')
 
 
     def test_undefinedBaseClass(self):
@@ -123,7 +123,7 @@ class Test(harness.Test):
         If a name in the base list of a class definition is undefined, a
         warning is emitted.
         """
-        self.flakes('''
+        flakes('''
         class foo(foo):
             pass
         ''', m.UndefinedName)
@@ -134,7 +134,7 @@ class Test(harness.Test):
         If a class name is used in the body of that class's definition and
         the name is not already defined, a warning is emitted.
         """
-        self.flakes('''
+        flakes('''
         class foo:
             foo
         ''', m.UndefinedName)
@@ -146,7 +146,7 @@ class Test(harness.Test):
         the name was previously defined in some other way, no warning is
         emitted.
         """
-        self.flakes('''
+        flakes('''
         foo = None
         class foo:
             foo
@@ -158,7 +158,7 @@ class Test(harness.Test):
         If a defined name is used on either side of any of the six comparison
         operators, no warning is emitted.
         """
-        self.flakes('''
+        flakes('''
         x = 10
         y = 20
         x < y
@@ -175,7 +175,7 @@ class Test(harness.Test):
         If a deefined name is used on either side of an identity test, no
         warning is emitted.
         """
-        self.flakes('''
+        flakes('''
         x = 10
         y = 20
         x is y
@@ -188,7 +188,7 @@ class Test(harness.Test):
         If a defined name is used on either side of a containment test, no
         warning is emitted.
         """
-        self.flakes('''
+        flakes('''
         x = 10
         y = 20
         x in y
@@ -200,11 +200,11 @@ class Test(harness.Test):
         """
         break and continue statements are supported.
         """
-        self.flakes('''
+        flakes('''
         for x in [1, 2]:
             break
         ''')
-        self.flakes('''
+        flakes('''
         for x in [1, 2]:
             continue
         ''')
@@ -214,7 +214,7 @@ class Test(harness.Test):
         """
         Ellipsis in a slice is supported.
         """
-        self.flakes('''
+        flakes('''
         [1, 2][...]
         ''')
 
@@ -223,14 +223,14 @@ class Test(harness.Test):
         """
         Extended slices are supported.
         """
-        self.flakes('''
+        flakes('''
         x = 3
         [1, 2][x,:]
         ''')
 
 
 
-class TestUnusedAssignment(harness.Test):
+class TestUnusedAssignment:
     """
     Tests for warning about unused assignments.
     """
@@ -240,7 +240,7 @@ class TestUnusedAssignment(harness.Test):
         Warn when a variable in a function is assigned a value that's never
         used.
         """
-        self.flakes('''
+        flakes('''
         def a():
             b = 1
         ''', m.UnusedVariable)
@@ -251,7 +251,7 @@ class TestUnusedAssignment(harness.Test):
         Assigning to a global and then not using that global is perfectly
         acceptable. Do not mistake it for an unused local variable.
         """
-        self.flakes('''
+        flakes('''
         b = 0
         def a():
             global b
@@ -267,7 +267,7 @@ class TestUnusedAssignment(harness.Test):
         """
         # XXX: Adding this test didn't generate a failure. Maybe not
         # necessary?
-        self.flakes('''
+        flakes('''
         class b:
             pass
         def a():
@@ -279,7 +279,7 @@ class TestUnusedAssignment(harness.Test):
         """
         Don't warn when a variable in a for loop is assigned to but not used.
         """
-        self.flakes('''
+        flakes('''
         def f():
             for i in range(10):
                 pass
@@ -291,7 +291,7 @@ class TestUnusedAssignment(harness.Test):
         Don't warn when a variable in a list comprehension is assigned to but
         not used.
         """
-        self.flakes('''
+        flakes('''
         def f():
             [None for i in range(10)]
         ''')
@@ -301,7 +301,7 @@ class TestUnusedAssignment(harness.Test):
         """
         Don't warn when a variable in a generator expression is assigned to but not used.
         """
-        self.flakes('''
+        flakes('''
         def f():
             (None for i in range(10))
         ''')
@@ -311,7 +311,7 @@ class TestUnusedAssignment(harness.Test):
         """
         Don't warn when a variable assignment occurs lexically after its use.
         """
-        self.flakes('''
+        flakes('''
         def f():
             x = None
             for i in range(10):
@@ -327,7 +327,7 @@ class TestUnusedAssignment(harness.Test):
         very common for variables in a tuple unpacking assignment to be unused
         in good Python code, so warning will only create false positives.
         """
-        self.flakes('''
+        flakes('''
         def f():
             (x, y) = 1, 2
         ''')
@@ -337,7 +337,7 @@ class TestUnusedAssignment(harness.Test):
         """
         Don't warn when a variable included in list unpacking is unused.
         """
-        self.flakes('''
+        flakes('''
         def f():
             [x, y] = [1, 2]
         ''')
@@ -347,7 +347,7 @@ class TestUnusedAssignment(harness.Test):
         """
         Don't warn when the assignment is used in an inner function.
         """
-        self.flakes('''
+        flakes('''
         def barMaker():
             foo = 5
             def bar():
@@ -361,7 +361,7 @@ class TestUnusedAssignment(harness.Test):
         Don't warn when the assignment is used in an inner function, even if
         that inner function itself is in an inner function.
         """
-        self.flakes('''
+        flakes('''
         def barMaker():
             foo = 5
             def bar():
@@ -372,20 +372,20 @@ class TestUnusedAssignment(harness.Test):
 
 
 
-class Python25Test(harness.Test):
+class Python25Test:
     """
     Tests for checking of syntax only available in Python 2.5 and newer.
     """
-    if version_info < (2, 5):
-        skip = "Python 2.5 required for if-else and with tests"
+    
+    pytestmark = [pytest.mark.skip_if("sys.version <'2.5'","Python 2.5 required for if-else and with tests")]
 
     def test_ifexp(self):
         """
         Test C{foo if bar else baz} statements.
         """
-        self.flakes("a = 'moo' if True else 'oink'")
-        self.flakes("a = foo if True else 'oink'", m.UndefinedName)
-        self.flakes("a = 'moo' if True else bar", m.UndefinedName)
+        flakes("a = 'moo' if True else 'oink'")
+        flakes("a = foo if True else 'oink'", m.UndefinedName)
+        flakes("a = 'moo' if True else bar", m.UndefinedName)
 
 
     def test_withStatementNoNames(self):
@@ -393,7 +393,7 @@ class Python25Test(harness.Test):
         No warnings are emitted for using inside or after a nameless C{with}
         statement a name defined beforehand.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         bar = None
         with open("foo"):
@@ -406,7 +406,7 @@ class Python25Test(harness.Test):
         No warnings are emitted for using a name defined by a C{with} statement
         within the suite or afterwards.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         with open('foo') as bar:
             bar
@@ -419,7 +419,7 @@ class Python25Test(harness.Test):
         No warnings are emitted for using an attribute as the target of a
         C{with} statement.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         import foo
         with open('foo') as foo.bar:
@@ -432,7 +432,7 @@ class Python25Test(harness.Test):
         No warnings are emitted for using a subscript as the target of a
         C{with} statement.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         import foo
         with open('foo') as foo[0]:
@@ -445,7 +445,7 @@ class Python25Test(harness.Test):
         An undefined name warning is emitted if the subscript used as the
         target of a C{with} statement is not defined.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         import foo
         with open('foo') as foo[bar]:
@@ -458,7 +458,7 @@ class Python25Test(harness.Test):
         No warnings are emitted for using any of the tuple of names defined by
         a C{with} statement within the suite or afterwards.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         with open('foo') as (bar, baz):
             bar, baz
@@ -471,7 +471,7 @@ class Python25Test(harness.Test):
         No warnings are emitted for using any of the list of names defined by a
         C{with} statement within the suite or afterwards.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         with open('foo') as [bar, baz]:
             bar, baz
@@ -487,7 +487,7 @@ class Python25Test(harness.Test):
         the names involved are checked both for definedness and any bindings
         created are respected in the suite of the statement and afterwards.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         c = d = e = g = h = i = None
         with open('foo') as [(a, b), c[d], e.f, g[h:i]]:
@@ -501,7 +501,7 @@ class Python25Test(harness.Test):
         An undefined name warning is emitted if the name first defined by a
         C{with} statement is used before the C{with} statement.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         bar
         with open('foo') as bar:
@@ -515,7 +515,7 @@ class Python25Test(harness.Test):
         tuple-unpacking form of the C{with} statement is used before the
         C{with} statement.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         baz
         with open('foo') as (bar, baz):
@@ -528,7 +528,7 @@ class Python25Test(harness.Test):
         A redefined name warning is emitted if a name bound by an import is
         rebound by the name defined by a C{with} statement.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         import bar
         with open('foo') as bar:
@@ -542,7 +542,7 @@ class Python25Test(harness.Test):
         rebound by one of the names defined by the tuple-unpacking form of a
         C{with} statement.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         import bar
         with open('foo') as (bar, baz):
@@ -555,7 +555,7 @@ class Python25Test(harness.Test):
         An undefined name warning is emitted if a name is used inside the
         body of a C{with} statement without first being bound.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         with open('foo') as bar:
             baz
@@ -567,7 +567,7 @@ class Python25Test(harness.Test):
         A name defined in the body of a C{with} statement can be used after
         the body ends without warning.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         with open('foo') as bar:
             baz = 10
@@ -580,13 +580,13 @@ class Python25Test(harness.Test):
         An undefined name warning is emitted if a name in the I{test}
         expression of a C{with} statement is undefined.
         """
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         with bar as baz:
             pass
         ''', m.UndefinedName)
 
-        self.flakes('''
+        flakes('''
         from __future__ import with_statement
         with bar as bar:
             pass
@@ -594,7 +594,7 @@ class Python25Test(harness.Test):
 
 
 
-class Python27Test(harness.Test):
+class Python27Test:
     """
     Tests for checking of syntax only available in Python 2.7 and newer.
     """
@@ -605,7 +605,7 @@ class Python27Test(harness.Test):
         """
         Dict comprehensions are properly handled.
         """
-        self.flakes('''
+        flakes('''
         a = {1: x for x in range(10)}
         ''')
 
@@ -613,7 +613,7 @@ class Python27Test(harness.Test):
         """
         Set comprehensions are properly handled.
         """
-        self.flakes('''
+        flakes('''
         a = {1, 2, 3}
         b = {x for x in range(10)}
         ''')
