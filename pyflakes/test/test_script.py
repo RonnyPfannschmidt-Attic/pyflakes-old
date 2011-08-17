@@ -4,7 +4,6 @@ Tests for L{pyflakes.scripts.pyflakes}.
 """
 
 import sys
-from StringIO import StringIO
 
 from unittest import TestCase
 from pyflakes.script import check, checkPath

@@ -12,6 +12,20 @@ from pyflakes import checker
 from pyflakes.messages import CouldNotCompile, CouldNotLoad
 
 
+
+
+def tree_and_lnooffset(source, filename):
+    try:
+        return compile(source, filename, "exec", _ast.PyCF_ONLY_AST), 0
+    except SyntaxError, e:
+        source = 'from __future__ import print_function\n' + source
+        try:
+            return compile(source, filename, "exec", _ast.PyCF_ONLY_AST), 1
+        except SyntaxError:
+            # raise the previous error
+            # since adding a line masks some errors in cpython
+            raise e
+
 def check(codeString, filename):
     """
     Check the Python source given by C{codeString} for flakes.
@@ -25,19 +39,11 @@ def check(codeString, filename):
 
     :returns: list warnings emmited
     """
-    # First, compile into an AST and handle syntax errors.
+
     try:
-        try:
-            tree = compile(codeString, filename, "exec", _ast.PyCF_ONLY_AST)
-            lnooffset = 0
-        # the weird position of value is necessary cause
-        # the hack masks original exception texts
-        except SyntaxError, value:
-            # HACK: try again with print function
-            tree = compile('from __future__ import print_function\n' +
-                           codeString, filename, "exec", _ast.PyCF_ONLY_AST)
-            lnooffset = 1
-    except SyntaxError:
+        # First, compile into an AST and handle syntax errors.
+        tree, lnooffset = tree_and_lnooffset(codeString, filename)
+    except SyntaxError, value:
         msg = value.args[0]
 
         (lineno, offset, text) = value.lineno, value.offset, value.text
@@ -135,7 +141,7 @@ def main():
                     messages = checkPath(pyfile)
                     present_messages(messages, summary, options.exclude)
             else:
-                messages = checkPath(pyfile)
+                messages = checkPath(arg)
                 present_messages(messages, summary, options.exclude)
     else:
         messages = check(sys.stdin.read(), '<stdin>')
